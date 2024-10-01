@@ -961,10 +961,11 @@ public:
     CUDA_SAFE_CALL(cudaMemset(this->output_gpu, 0, output_bit_bytes()));
     // Allocate residual for saving
     if (save_residual) {
-      if (unified_mem)
+      if (unified_mem) {
         SAFE_ALOC_UM(output_residual_gpu, residual_bytes());
-      else
+      } else {
         SAFE_ALOC_GPU(output_residual_gpu, residual_bytes());
+      }
 
       CUDA_SAFE_CALL(
           cudaMemset(this->output_residual_gpu, 0, residual_bytes()));

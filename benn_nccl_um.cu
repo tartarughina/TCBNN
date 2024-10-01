@@ -236,10 +236,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  CHECK_MPI_EXIT(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank,
-                                     MPI_INFO_NULL, &local_comm));
-  CHECK_MPI_EXIT(MPI_Comm_rank(local_comm, &i_gpu));
-
+  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
+                      &local_comm);
+  MPI_Comm_rank(local_comm, &i_gpu);
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
   float comp_times[8] = {0};
   float comm_times[8] = {0};
@@ -252,12 +251,10 @@ int main(int argc, char *argv[]) {
     ncclGetUniqueId(&id);
   }
 
-  CHECK_MPI_EXIT(MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
-
+  MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
 
-  CHECK_MPI_EXIT(MPI_Barrier(MPI_COMM_WORLD));
-
+  MPI_Barrier(MPI_COMM_WORLD);
   cudaEvent_t comp_start, comp_stop, comm_start, comm_stop;
   CUDA_SAFE_CALL(cudaEventCreate(&comp_start));
   CUDA_SAFE_CALL(cudaEventCreate(&comp_stop));
@@ -299,9 +296,9 @@ int main(int argc, char *argv[]) {
   InConv128LayerParam *bconv1 = nullptr;
   if (unified_mem) {
     SAFE_ALOC_UM(bconv1, sizeof(In128LayerParam));
-    new (bconv1) InConv128LayerParam(
-        "Conv1", image_height, image_width, 7, 7, 3, 64, batch, 4, 4, true, 1,
-        1, true, false, unified_mem, um_tuning); // save residual
+    new (bconv1) InConv128LayerParam("Conv1", image_height, image_width, 7, 7,
+                                     3, 64, batch, 4, 4, true, 1, 1, true,
+                                     unified_mem, um_tuning); // save residual
   } else {
     bconv1 =
         new InConv128LayerParam("Conv1", image_height, image_width, 7, 7, 3, 64,
