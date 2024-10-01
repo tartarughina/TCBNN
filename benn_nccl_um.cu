@@ -293,145 +293,309 @@ int main(int argc, char *argv[]) {
 
   //================ Set Network =================
   // Layer-0
-  InConv128LayerParam *bconv1 = nullptr, *bconv1_gpu = nullptr;
+  InConv128LayerParam *bconv1 = nullptr;
   if (unified_mem) {
-    CUDA_SAFE_CALL(cudaMallocManaged(&bconv1, sizeof(In128LayerParam)));
-    new (bconv1)
-        In128LayerParam("Conv1", image_height, image_width, 7, 7, 3, 64, batch,
-                        4, 4, true, 1, 1, true); // save residual
-    bconv1_gpu = bconv1->initialize(images, config_file);
+    SAFE_ALOC_UM(bconv1, sizeof(In128LayerParam));
+    new (bconv1) InConv128LayerParam(
+        "Conv1", image_height, image_width, 7, 7, 3, 64, batch, 4, 4, true, 1,
+        1, true, false, unified_mem, um_tuning); // save residual
   } else {
     bconv1 =
         new InConv128LayerParam("Conv1", image_height, image_width, 7, 7, 3, 64,
                                 batch, 4, 4, true, 1, 1, true); // save residual
-    bconv1_gpu = bconv1->initialize(images, config_file);
   }
+  InConv128LayerParam *bconv1_gpu = bconv1->initialize(images, config_file);
 
   // Layer-1, basic-block-1, conv1
-  Conv128LayerParam *l1b1c1 =
-      new Conv128LayerParam("L1B1C1", bconv1->output_height,
-                            bconv1->output_width, 3, 3, 64, 64, batch);
+  Conv128LayerParam *l1b1c1 = nullptr;
+  if (unified_mem) {
+    SAFE_FREE_UM(l1b1c1, sizeof(Conv128LayerParam));
+    new (l1b1c1)
+        Conv128LayerParam("L1B1C1", bconv1->output_height, bconv1->output_width,
+                          3, 3, 64, 64, batch, 1, 1, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
+  } else {
+    l1b1c1 = new Conv128LayerParam("L1B1C1", bconv1->output_height,
+                                   bconv1->output_width, 3, 3, 64, 64, batch);
+  }
   Conv128LayerParam *l1b1c1_gpu =
       l1b1c1->initialize(config_file, bconv1->get_output_gpu());
 
   // Layer-1, basic-block-1, conv2
-  Conv128LayerParam *l1b1c2 = new Conv128LayerParam(
-      "L1B1C2", l1b1c1->output_height, l1b1c1->output_width, 3, 3, 64, 64,
-      batch, 1, 1, true, 1, 1, false, true, true, 64);
+  Conv128LayerParam *l1b1c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l1b1c2, sizeof(Conv128LayerParam));
+    new (l1b1c2)
+        Conv128LayerParam("L1B1C2", l1b1c1->output_height, l1b1c1->output_width,
+                          3, 3, 64, 64, batch, 1, 1, true, 1, 1, false, true,
+                          true, 64, false, unified_mem, um_tuning);
+  } else {
+    l1b1c2 = new Conv128LayerParam("L1B1C2", l1b1c1->output_height,
+                                   l1b1c1->output_width, 3, 3, 64, 64, batch, 1,
+                                   1, true, 1, 1, false, true, true, 64);
+  }
   Conv128LayerParam *l1b1c2_gpu = l1b1c2->initialize(
       config_file, l1b1c1->get_output_gpu(), bconv1->get_output_residual_gpu());
 
   // Layer-1, basic-block-2, conv1
-  Conv128LayerParam *l1b2c1 =
-      new Conv128LayerParam("L1B2C1", l1b1c2->output_height,
-                            l1b1c2->output_width, 3, 3, 64, 64, batch);
+  Conv128LayerParam *l1b2c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l1b2c1, sizeof(Conv128LayerParam));
+    new (l1b2c1)
+        Conv128LayerParam("L1B2C1", l1b1c2->output_height, l1b1c2->output_width,
+                          3, 3, 64, 64, batch, 1, 1, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
+  } else {
+    l1b2c1 = new Conv128LayerParam("L1B2C1", l1b1c2->output_height,
+                                   l1b1c2->output_width, 3, 3, 64, 64, batch);
+  }
+
   Conv128LayerParam *l1b2c1_gpu =
       l1b2c1->initialize(config_file, l1b1c2->get_output_gpu());
 
   // Layer-1, basic-block-2, conv2
-  Conv128LayerParam *l1b2c2 = new Conv128LayerParam(
-      "L1B2C2", l1b2c1->output_height, l1b2c1->output_width, 3, 3, 64, 64,
-      batch, 1, 1, true, 1, 1, false, true, true, 128);
+  Conv128LayerParam *l1b2c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l1b2c2, sizeof(Conv128LayerParam));
+    new (l1b2c2)
+        Conv128LayerParam("L1B2C2", l1b2c1->output_height, l1b2c1->output_width,
+                          3, 3, 64, 64, batch, 1, 1, true, 1, 1, false, true,
+                          true, 128, false, unified_mem, um_tuning);
+  } else {
+    l1b2c2 = new Conv128LayerParam("L1B2C2", l1b2c1->output_height,
+                                   l1b2c1->output_width, 3, 3, 64, 64, batch, 1,
+                                   1, true, 1, 1, false, true, true, 128);
+  }
+
   Conv128LayerParam *l1b2c2_gpu = l1b2c2->initialize(
       config_file, l1b2c1->get_output_gpu(), l1b1c2->get_output_residual_gpu());
 
   //=============
   // Layer-2, basic-block-1, conv1
-  Conv128LayerParam *l2b1c1 =
-      new Conv128LayerParam("L2B1C1", l1b2c2->output_height,
-                            l1b2c2->output_width, 3, 3, 64, 128, batch, 2, 2);
+  Conv128LayerParam *l2b1c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l2b1c1, sizeof(Conv128Layer));
+    new (l2b1c1)
+        Conv128LayerParam("L2B1C1", l1b2c2->output_height, l1b2c2->output_width,
+                          3, 3, 64, 128, batch, 2, 2, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning););
+  } else {
+    new Conv128LayerParam("L2B1C1", l1b2c2->output_height, l1b2c2->output_width,
+                          3, 3, 64, 128, batch, 2, 2);
+  }
+
   Conv128LayerParam *l2b1c1_gpu =
       l2b1c1->initialize(config_file, l1b2c2->get_output_gpu());
 
   // Layer-2, basic-block-1, conv2
-  Conv128LayerParam *l2b1c2 = new Conv128LayerParam(
-      "L2B1C2", l2b1c1->output_height, l2b1c1->output_width, 3, 3, 128, 128,
-      batch, 1, 1, true, 1, 1, false, true, true, 128, true);
+  Conv128LayerParam *l2b1c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l2b1c2, sizeof(Conv128LayerParam));
+    new (l2b1c2)
+        Conv128LayerParam("L2B1C2", l2b1c1->output_height, l2b1c1->output_width,
+                          3, 3, 128, 128, batch, 1, 1, true, 1, 1, false, true,
+                          true, 128, true, unified_mem, um_tuning);
+  } else {
+    l2b1c2 = new Conv128LayerParam(
+        "L2B1C2", l2b1c1->output_height, l2b1c1->output_width, 3, 3, 128, 128,
+        batch, 1, 1, true, 1, 1, false, true, true, 128, true);
+  }
   Conv128LayerParam *l2b1c2_gpu = l2b1c2->initialize(
       config_file, l2b1c1->get_output_gpu(), l1b2c2->get_output_residual_gpu());
 
   // Layer-2, basic-block-2, conv1
-  Conv128LayerParam *l2b2c1 =
-      new Conv128LayerParam("L2B2C1", l2b1c2->output_height,
-                            l2b1c2->output_width, 3, 3, 128, 128, batch, 1, 1);
+  Conv128LayerParam *l2b2c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l2b2c1, sizeof(Conv128LayerParam));
+    new (l2b2c1)
+        Conv128LayerParam("L2B2C1", l2b1c2->output_height, l2b1c2->output_width,
+                          3, 3, 128, 128, batch, 1, 1, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
+  } else {
+    l2b2c1 = new Conv128LayerParam("L2B2C1", l2b1c2->output_height,
+                                   l2b1c2->output_width, 3, 3, 128, 128, batch,
+                                   1, 1);
+  }
+
   Conv128LayerParam *l2b2c1_gpu =
       l2b2c1->initialize(config_file, l2b1c2->get_output_gpu());
 
   // Layer-2, basic-block-2, conv2
-  Conv128LayerParam *l2b2c2 = new Conv128LayerParam(
-      "L2B2C2", l2b2c1->output_height, l2b2c1->output_width, 3, 3, 128, 128,
-      batch, 1, 1, true, 1, 1, false, true, true, 128);
+  Conv128LayerParam *l2b2c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l2b2c2, sizeof(Conv128LayerParam));
+    new (l2b2c2)
+        Conv128LayerParam("L2B2C2", l2b2c1->output_height, l2b2c1->output_width,
+                          3, 3, 128, 128, batch, 1, 1, true, 1, 1, false, true,
+                          true, 128, false, unified_mem, um_tuning);
+  } else {
+    new Conv128LayerParam("L2B2C2", l2b2c1->output_height, l2b2c1->output_width,
+                          3, 3, 128, 128, batch, 1, 1, true, 1, 1, false, true,
+                          true, 128);
+  }
   Conv128LayerParam *l2b2c2_gpu = l2b2c2->initialize(
       config_file, l2b2c1->get_output_gpu(), l2b1c2->get_output_residual_gpu());
 
   //=============
   // Layer-3, basic-block-1, conv1
-  Conv128LayerParam *l3b1c1 =
-      new Conv128LayerParam("L3B1C1", l2b2c2->output_height,
-                            l2b2c2->output_width, 3, 3, 128, 256, batch, 2, 2);
+  Conv128LayerParam *l3b1c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l3b1c1, sizeof(Conv128LayerParam));
+    new (l3b1c1)
+        Conv128LayerParam("L3B1C1", l2b2c2->output_height, l2b2c2->output_width,
+                          3, 3, 128, 256, batch, 2, 2, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
+  } else {
+    l3b1c1 = new Conv128LayerParam("L3B1C1", l2b2c2->output_height,
+                                   l2b2c2->output_width, 3, 3, 128, 256, batch,
+                                   2, 2);
+  }
+
   Conv128LayerParam *l3b1c1_gpu =
       l3b1c1->initialize(config_file, l2b2c2->get_output_gpu());
 
   // Layer-3, basic-block-1, conv2
-  Conv128LayerParam *l3b1c2 = new Conv128LayerParam(
-      "L3B1C2", l3b1c1->output_height, l3b1c1->output_width, 3, 3, 256, 256,
-      batch, 1, 1, true, 1, 1, false, true, true, 128, true);
+  Conv128LayerParam *l3b1c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l3b1c2, sizeof(Conv128LayerParam));
+    new (l3b1c2)
+        Conv128LayerParam("L3B1C2", l3b1c1->output_height, l3b1c1->output_width,
+                          3, 3, 256, 256, batch, 1, 1, true, 1, 1, false, true,
+                          true, 128, true, unified_mem, um_tuning);
+  } else {
+    l3b1c2 = new Conv128LayerParam(
+        "L3B1C2", l3b1c1->output_height, l3b1c1->output_width, 3, 3, 256, 256,
+        batch, 1, 1, true, 1, 1, false, true, true, 128, true);
+  }
   Conv128LayerParam *l3b1c2_gpu = l3b1c2->initialize(
       config_file, l3b1c1->get_output_gpu(), l2b2c2->get_output_residual_gpu());
 
   // Layer-3, basic-block-2, conv1
-  Conv128LayerParam *l3b2c1 =
-      new Conv128LayerParam("L3B2C1", l3b1c2->output_height,
-                            l3b1c2->output_width, 3, 3, 256, 256, batch, 1, 1);
+  Conv128LayerParam *l3b2c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l3b2c1, sizeof(InConv128LayerParam));
+    new (l3b2c1)
+        Conv128LayerParam("L3B2C1", l3b1c2->output_height, l3b1c2->output_width,
+                          3, 3, 256, 256, batch, 1, 1, , true, 1, 1, false,
+                          false, false, 0, false, unified_mem, um_tuning);
+  } else {
+    l3b2c1 = new Conv128LayerParam("L3B2C1", l3b1c2->output_height,
+                                   l3b1c2->output_width, 3, 3, 256, 256, batch,
+                                   1, 1);
+  }
+
   Conv128LayerParam *l3b2c1_gpu =
       l3b2c1->initialize(config_file, l3b1c2->get_output_gpu());
 
   // Layer-3, basic-block-2, conv2
-  Conv128LayerParam *l3b2c2 = new Conv128LayerParam(
-      "L3B2C2", l3b2c1->output_height, l3b2c1->output_width, 3, 3, 256, 256,
-      batch, 1, 1, true, 1, 1, false, true, true, 256);
+  Conv128LayerParam *l3b2c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l3b2c2, sizeof(Conv128LayerParam));
+    new (l3b2c2) new Conv128LayerParam(
+        "L3B2C2", l3b2c1->output_height, l3b2c1->output_width, 3, 3, 256, 256,
+        batch, 1, 1, true, 1, 1, false, true, true, 256, false, unified_mem,
+        um_tuning);
+  } else {
+    l3b2c2 = new Conv128LayerParam("L3B2C2", l3b2c1->output_height,
+                                   l3b2c1->output_width, 3, 3, 256, 256, batch,
+                                   1, 1, true, 1, 1, false, true, true, 256);
+  }
   Conv128LayerParam *l3b2c2_gpu = l3b2c2->initialize(
       config_file, l3b2c1->get_output_gpu(), l3b1c2->get_output_residual_gpu());
 
   //=============
   // Layer-4, basic-block-1, conv1
-  Conv128LayerParam *l4b1c1 =
-      new Conv128LayerParam("L4B1C1", l3b2c2->output_height,
-                            l3b2c2->output_width, 3, 3, 256, 512, batch, 2, 2);
+  Conv128LayerParam *l4b1c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l4b1c1, sizeof(Conv128LayerParam));
+    new (l4b1c1)
+        Conv128LayerParam("L4B1C1", l3b2c2->output_height, l3b2c2->output_width,
+                          3, 3, 256, 512, batch, 2, 2, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
+  } else {
+    l4b1c1 = new Conv128LayerParam("L4B1C1", l3b2c2->output_height,
+                                   l3b2c2->output_width, 3, 3, 256, 512, batch,
+                                   2, 2);
+  }
+
   Conv128LayerParam *l4b1c1_gpu =
       l4b1c1->initialize(config_file, l3b2c2->get_output_gpu());
 
   // Layer-4, basic-block-1, conv2
-  Conv128LayerParam *l4b1c2 = new Conv128LayerParam(
-      "L4B1C2", l4b1c1->output_height, l4b1c1->output_width, 3, 3, 512, 512,
-      batch, 1, 1, true, 1, 1, false, true, true, 256, true);
+  Conv128LayerParam *l4b1c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l4b1c2, sizeof(Conv128LayerParam));
+    new (l4b1c2) new Conv128LayerParam("L4B1C2", l4b1c1->output_height,
+                                       l4b1c1->output_width, 3, 3, 512, 512,
+                                       batch, 1, 1, true, 1, 1, false, true,
+                                       true, 256, true, unified_mem, um_tuning);
+  } else {
+    l4b1c2 = new Conv128LayerParam(
+        "L4B1C2", l4b1c1->output_height, l4b1c1->output_width, 3, 3, 512, 512,
+        batch, 1, 1, true, 1, 1, false, true, true, 256, true);
+  }
   Conv128LayerParam *l4b1c2_gpu = l4b1c2->initialize(
       config_file, l4b1c1->get_output_gpu(), l3b2c2->get_output_residual_gpu());
 
   // Layer-4, basic-block-2, conv1
-  Conv128LayerParam *l4b2c1 =
-      new Conv128LayerParam("L4B2C1", l4b1c2->output_height,
-                            l4b1c2->output_width, 3, 3, 512, 512, batch, 1, 1);
+  Conv128LayerParam *l4b2c1 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l4b2c1, sizeof(Conv128LayerParam));
+    new (l4b2c1)
+        Conv128LayerParam("L4B2C1", l4b1c2->output_height, l4b1c2->output_width,
+                          3, 3, 512, 512, batch, 1, 1, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
+  } else {
+    l4b2c1 = new Conv128LayerParam("L4B2C1", l4b1c2->output_height,
+                                   l4b1c2->output_width, 3, 3, 512, 512, batch,
+                                   1, 1);
+  }
+
   Conv128LayerParam *l4b2c1_gpu =
       l4b2c1->initialize(config_file, l4b1c2->get_output_gpu());
 
   // Layer-4, basic-block-2, conv2
-  Conv128LayerParam *l4b2c2 = new Conv128LayerParam(
-      "L4B2C2", l4b2c1->output_height, l4b2c1->output_width, 3, 3, 512, 512,
-      batch, 1, 1, true, 1, 1, true, false, true, 512);
+  Conv128LayerParam *l4b2c2 = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(l4b2c2, sizeof(Conv128LayerParam));
+    new (l4b2c2)
+        Conv128LayerParam("L4B2C2", l4b2c1->output_height, l4b2c1->output_width,
+                          3, 3, 512, 512, batch, 1, 1, true, 1, 1, true, false,
+                          true, 512, false, unified_mem, um_tuning);
+  } else {
+    l4b2c2 = new Conv128LayerParam("L4B2C2", l4b2c1->output_height,
+                                   l4b2c1->output_width, 3, 3, 512, 512, batch,
+                                   1, 1, true, 1, 1, true, false, true, 512);
+  }
   Conv128LayerParam *l4b2c2_gpu = l4b2c2->initialize(
       config_file, l4b2c1->get_output_gpu(), l4b1c2->get_output_residual_gpu());
 
   //=============
   // Layer-5
-  Fc128LayerParam *bfc1 = new Fc128LayerParam(
-      "Fc1", batch, (l4b2c2->output_height) * (l4b2c2->output_width) * 512,
-      512);
+  Fc128LayerParam *bfc1 = nullptr;
+  if (unified_memory) {
+    SAFE_ALOC_UM(bfc1, sizeof(bfc1));
+    new (bfc1) Fc128LayerParam(
+        "Fc1", batch, (l4b2c2->output_height) * (l4b2c2->output_width) * 512,
+        512, unified_mem, um_tuning);
+  } else {
+    bfc1 = new Fc128LayerParam(
+        "Fc1", batch, (l4b2c2->output_height) * (l4b2c2->output_width) * 512,
+        512);
+  }
+
   Fc128LayerParam *bfc1_gpu =
       bfc1->initialize(config_file, l4b2c2->get_output_gpu());
   // Out Layer
-  Out128LayerParam *bout =
-      new Out128LayerParam("Fout", batch, 512, output_size);
+  Out128LayerParam *bout = nullptr;
+  if (unified_mem) {
+    SAFE_ALOC_UM(bout, sizeof(Out128LayerParam));
+    new (bout) Out128LayerParam("Fout", batch, 512, output_size, unified_mem,
+                                um_tuning);
+  } else {
+    bout = new Out128LayerParam("Fout", batch, 512, output_size);
+  }
+
   Out128LayerParam *bout_gpu =
       bout->initialize(config_file, bfc1->get_output_gpu());
 
