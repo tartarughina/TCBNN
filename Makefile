@@ -15,6 +15,7 @@ NVCC = nvcc
 NVCC_FLAG = -std=c++11 -O3 -w  -arch=sm_80 -maxrregcount=64 -rdc=true
 LIBS = -ljpeg
 NCCL_PATH = $(NVIDIA_PATH)/comm_libs/nccl
+JPEG_PATH = /home/tartarughina/libjpeg
 # For debug
 #NVCC_FLAG = -std=c++11 -w -O0 -g -G -arch=sm_75 -maxrregcount=64 -rdc=true -Xptxas -v
 
@@ -51,7 +52,7 @@ all: benn_nccl
 # benn_scaleout: benn_scaleout.cu param.h kernel.cuh data.h data.cpp utility.h
 #     $(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_scaleout.cu data.cpp $(LIBS)
 benn_nccl: benn_nccl_um.cu param.h kernel.cuh data.h data.cpp utility.h
-	$(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_nccl_um.cu data.cpp $(LIBS)
+	$(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_nccl_um.cu data.cpp $(LIBS) -I$(JPEG_PATH)/include -L$(JPEG_PATH)/lib64
 
 clean:
 	rm benn_nccl
