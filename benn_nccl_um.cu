@@ -693,37 +693,70 @@ int main(int argc, char *argv[]) {
 
   if (unified_mem) {
     bconv1_gpu->~In128LayerParam();
-    CUDA_SAFE_CALL(cudaFree(bconv1_gpu));
+    SAFE_FREE_UM(bconv1);
+    l1b1c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l1b1c1);
+    l1b1c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l1b1c2);
+    l1b2c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l1b2c1);
+    l1b2c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l1b2c2);
+    l2b1c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l2b1c1);
+    l2b1c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l2b1c2);
+    l2b2c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l2b2c1);
+    l2b2c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l2b2c2);
+    l3b1c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l3b1c1);
+    l3b1c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l3b1c2);
+    l3b2c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l3b2c1);
+    l3b2c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l3b2c2);
+    l4b1c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l4b1c1);
+    l4b1c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l4b1c2);
+    l4b2c1->~Conv128LayerParam();
+    SAFE_FREE_UM(l4b2c1);
+    l4b2c2->~Conv128LayerParam();
+    SAFE_FREE_UM(l4b2c2);
+    bfc1_gpu->~Fc128LayerParam();
+    SAFE_FREE_UM(bfc1);
+    bout_gpu->~Out128LayerParam();
+    SAFE_FREE_UM(bout);
+
+    SAFE_FREE_UM(image_labels);
+    SAFE_FREE_UM(images);
   } else {
     delete bconv1;
-  }
+    delete l1b1c1;
+    delete l1b1c2;
+    delete l1b2c1;
+    delete l1b2c2;
 
-  delete l1b1c1;
-  delete l1b1c2;
-  delete l1b2c1;
-  delete l1b2c2;
+    delete l2b1c1;
+    delete l2b1c2;
+    delete l2b2c1;
+    delete l2b2c2;
 
-  delete l2b1c1;
-  delete l2b1c2;
-  delete l2b2c1;
-  delete l2b2c2;
+    delete l3b1c1;
+    delete l3b1c2;
+    delete l3b2c1;
+    delete l3b2c2;
 
-  delete l3b1c1;
-  delete l3b1c2;
-  delete l3b2c1;
-  delete l3b2c2;
+    delete l4b1c1;
+    delete l4b1c2;
+    delete l4b2c1;
+    delete l4b2c2;
 
-  delete l4b1c1;
-  delete l4b1c2;
-  delete l4b2c1;
-  delete l4b2c2;
-
-  delete bfc1;
-  delete bout;
-
-  if (unified_mem) {
-    SAFE_FREE_GPU(image_labels);
-    SAFE_FREE_GPU(images);
+    delete bfc1;
+    delete bout;
   }
 
   ncclCommDestroy(comm);
