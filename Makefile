@@ -12,9 +12,9 @@
 
 
 NVCC = nvcc
-NVCC_FLAG = -std=c++11 -O3 -w  -arch=sm_75 -maxrregcount=64 -rdc=true 
+NVCC_FLAG = -std=c++11 -O3 -w  -arch=sm_80 -maxrregcount=64 -rdc=true
 LIBS = -ljpeg
-
+NCCL_PATH = path/to/nccl
 # For debug
 #NVCC_FLAG = -std=c++11 -w -O0 -g -G -arch=sm_75 -maxrregcount=64 -rdc=true -Xptxas -v
 
@@ -22,7 +22,7 @@ LIBS = -ljpeg
 #all: imagenet_vgg imagenet_alexnet imagenet_resnet
 all: imagenet_resnet cifar10_resnet mnist_mlp cifar10_vgg imagenet_alexnet imagenet_vgg
 
-#all: benn_scaleup 
+#all: benn_scaleup
 
 
 
@@ -48,9 +48,7 @@ benn_scaleup: benn_scaleup.cu param.h kernel.cuh data.h data.cpp utility.h
 	$(NVCC) $(NVCC_FLAG) -Xcompiler -fopenmp -lnccl -I/home/lian599/opt/nccl_v1/include -L/home/lian599/opt/nccl_v1/lib -o $@ benn_scaleup.cu data.cpp $(LIBS)
 
 benn_scaleout: benn_scaleout.cu param.h kernel.cuh data.h data.cpp utility.h
-	$(NVCC) $(NVCC_FLAG) -ccbin mpicxx -o $@ benn_scaleup.cu data.cpp $(LIBS)
-
+    $(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_scaleout.cu data.cpp $(LIBS)
 
 clean:
 	rm mnist_mlp cifar10_vgg cifar10_resnet
-
