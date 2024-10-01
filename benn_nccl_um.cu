@@ -15,6 +15,7 @@
 #include <getopt.h>
 #include <iostream>
 #include <mpi.h>
+#include <nccl.h>
 #include <stdio.h>
 #include <string>
 #include <sys/time.h>
@@ -264,7 +265,7 @@ int main(int argc, char *argv[]) {
   CUDA_SAFE_CALL(cudaEventCreate(&comm_stop));
 
   int dev = i_gpu;
-  // const unsigned batch = 64;
+  const unsigned batch = 64;
   const unsigned output_size = 1000;
   const unsigned image_height = 224;
   const unsigned image_width = 224;
@@ -380,7 +381,7 @@ int main(int argc, char *argv[]) {
     new (l2b1c1)
         Conv128LayerParam("L2B1C1", l1b2c2->output_height, l1b2c2->output_width,
                           3, 3, 64, 128, batch, 2, 2, true, 1, 1, false, false,
-                          false, 0, false, unified_mem, um_tuning););
+                          false, 0, false, unified_mem, um_tuning);
   } else {
     new Conv128LayerParam("L2B1C1", l1b2c2->output_height, l1b2c2->output_width,
                           3, 3, 64, 128, batch, 2, 2);
@@ -478,8 +479,8 @@ int main(int argc, char *argv[]) {
     SAFE_ALOC_UM(l3b2c1, sizeof(InConv128LayerParam));
     new (l3b2c1)
         Conv128LayerParam("L3B2C1", l3b1c2->output_height, l3b1c2->output_width,
-                          3, 3, 256, 256, batch, 1, 1, , true, 1, 1, false,
-                          false, false, 0, false, unified_mem, um_tuning);
+                          3, 3, 256, 256, batch, 1, 1, true, 1, 1, false, false,
+                          false, 0, false, unified_mem, um_tuning);
   } else {
     l3b2c1 = new Conv128LayerParam("L3B2C1", l3b1c2->output_height,
                                    l3b1c2->output_width, 3, 3, 256, 256, batch,
@@ -493,10 +494,10 @@ int main(int argc, char *argv[]) {
   Conv128LayerParam *l3b2c2 = nullptr;
   if (unified_mem) {
     SAFE_ALOC_UM(l3b2c2, sizeof(Conv128LayerParam));
-    new (l3b2c2) new Conv128LayerParam(
-        "L3B2C2", l3b2c1->output_height, l3b2c1->output_width, 3, 3, 256, 256,
-        batch, 1, 1, true, 1, 1, false, true, true, 256, false, unified_mem,
-        um_tuning);
+    new (l3b2c2)
+        Conv128LayerParam("L3B2C2", l3b2c1->output_height, l3b2c1->output_width,
+                          3, 3, 256, 256, batch, 1, 1, true, 1, 1, false, true,
+                          true, 256, false, unified_mem, um_tuning);
   } else {
     l3b2c2 = new Conv128LayerParam("L3B2C2", l3b2c1->output_height,
                                    l3b2c1->output_width, 3, 3, 256, 256, batch,
@@ -527,10 +528,10 @@ int main(int argc, char *argv[]) {
   Conv128LayerParam *l4b1c2 = nullptr;
   if (unified_mem) {
     SAFE_ALOC_UM(l4b1c2, sizeof(Conv128LayerParam));
-    new (l4b1c2) new Conv128LayerParam("L4B1C2", l4b1c1->output_height,
-                                       l4b1c1->output_width, 3, 3, 512, 512,
-                                       batch, 1, 1, true, 1, 1, false, true,
-                                       true, 256, true, unified_mem, um_tuning);
+    new (l4b1c2)
+        Conv128LayerParam("L4B1C2", l4b1c1->output_height, l4b1c1->output_width,
+                          3, 3, 512, 512, batch, 1, 1, true, 1, 1, false, true,
+                          true, 256, true, unified_mem, um_tuning);
   } else {
     l4b1c2 = new Conv128LayerParam(
         "L4B1C2", l4b1c1->output_height, l4b1c1->output_width, 3, 3, 512, 512,
@@ -575,7 +576,7 @@ int main(int argc, char *argv[]) {
   //=============
   // Layer-5
   Fc128LayerParam *bfc1 = nullptr;
-  if (unified_memory) {
+  if (unified_mem) {
     SAFE_ALOC_UM(bfc1, sizeof(bfc1));
     new (bfc1) Fc128LayerParam(
         "Fc1", batch, (l4b2c2->output_height) * (l4b2c2->output_width) * 512,
@@ -694,7 +695,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (unified_mem) {
-    bconv1_gpu->~In128LayerParam();
+    bconv1_gpu->~InConv128LayerParam();
     SAFE_FREE_UM(bconv1);
     l1b1c1->~Conv128LayerParam();
     SAFE_FREE_UM(l1b1c1);

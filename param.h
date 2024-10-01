@@ -544,7 +544,7 @@ public:
     // BN
     if (unified_mem) {
       SAFE_ALOC_UM(bn_scale, bn_bytes());
-      bs_scale_gpu = bn_scale;
+      bn_scale_gpu = bn_scale;
       SAFE_ALOC_UM(bn_bias, bn_bytes());
       bn_bias_gpu = bn_bias;
       SAFE_ALOC_UM(output, output_bytes());
@@ -954,8 +954,9 @@ public:
     if (unified_mem) {
       SAFE_ALOC_UM(output_gpu, output_bit_bytes());
       output = output_gpu;
-    } else
+    } else {
       SAFE_ALOC_GPU(output_gpu, output_bit_bytes());
+    }
 
     CUDA_SAFE_CALL(cudaMemset(this->output_gpu, 0, output_bit_bytes()));
     // Allocate residual for saving
