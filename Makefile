@@ -51,7 +51,7 @@ all: benn_nccl
 # benn_scaleout: benn_scaleout.cu param.h kernel.cuh data.h data.cpp utility.h
 #     $(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_scaleout.cu data.cpp $(LIBS)
 benn_nccl: benn_nccl_um.cu param.h kernel.cuh data.h data.cpp utility.h
-$(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_nccl_um.cu data.cpp $(LIBS)
+	$(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_nccl_um.cu data.cpp $(LIBS)
 
 clean:
 	rm benn_nccl
