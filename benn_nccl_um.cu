@@ -23,6 +23,8 @@
 using namespace cooperative_groups;
 using namespace std;
 
+#ifdef NEWFMT
+
 __global__ void resnet128(InConv128LayerParam *bconv1,
                           Conv128LayerParam *l1b1c1, Conv128LayerParam *l1b1c2,
                           Conv128LayerParam *l1b2c1, Conv128LayerParam *l1b2c2,
@@ -309,7 +311,7 @@ int main(int argc, char *argv[]) {
   // Layer-1, basic-block-1, conv1
   Conv128LayerParam *l1b1c1 = nullptr;
   if (unified_mem) {
-    SAFE_FREE_UM(l1b1c1, sizeof(Conv128LayerParam));
+    SAFE_ALOC_UM(l1b1c1, sizeof(Conv128LayerParam));
     new (l1b1c1)
         Conv128LayerParam("L1B1C1", bconv1->output_height, bconv1->output_width,
                           3, 3, 64, 64, batch, 1, 1, true, 1, 1, false, false,
