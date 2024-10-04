@@ -253,8 +253,9 @@ int main(int argc, char *argv[]) {
   }
 
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
-  float comp_times[8] = {0};
-  float comm_times[8] = {0};
+
+  vector<float> comp_times = vector<float>(n_gpu, 0);
+  vector<float> comm_times = vector<float>(n_gpu, 0);
 
   ncclUniqueId id;
 
@@ -313,6 +314,11 @@ int main(int argc, char *argv[]) {
     printf("Completed reading images\n");
   //================ Get Weight =================
   FILE *config_file = fopen("./resnet_imagenet.csv", "r");
+
+  if (!config_file) {
+    fprintf(stderr, "Error: Could not open config file.\n");
+    exit(EXIT_FAILURE);
+  }
 
   if (verbose)
     printf("Completed reading config file\n");
@@ -407,8 +413,9 @@ int main(int argc, char *argv[]) {
                           3, 3, 64, 128, batch, 2, 2, true, 1, 1, false, false,
                           false, 0, false, unified_mem, um_tuning);
   } else {
-    new Conv128LayerParam("L2B1C1", l1b2c2->output_height, l1b2c2->output_width,
-                          3, 3, 64, 128, batch, 2, 2);
+    l2b1c1 =
+        new Conv128LayerParam("L2B1C1", l1b2c2->output_height,
+                              l1b2c2->output_width, 3, 3, 64, 128, batch, 2, 2);
   }
 
   Conv128LayerParam *l2b1c1_gpu =
@@ -456,9 +463,9 @@ int main(int argc, char *argv[]) {
                           3, 3, 128, 128, batch, 1, 1, true, 1, 1, false, true,
                           true, 128, false, unified_mem, um_tuning);
   } else {
-    new Conv128LayerParam("L2B2C2", l2b2c1->output_height, l2b2c1->output_width,
-                          3, 3, 128, 128, batch, 1, 1, true, 1, 1, false, true,
-                          true, 128);
+    l2b2c2 = new Conv128LayerParam("L2B2C2", l2b2c1->output_height,
+                                   l2b2c1->output_width, 3, 3, 128, 128, batch,
+                                   1, 1, true, 1, 1, false, true, true, 128);
   }
   Conv128LayerParam *l2b2c2_gpu = l2b2c2->initialize(
       config_file, l2b2c1->get_output_gpu(), l2b1c2->get_output_residual_gpu());
@@ -601,7 +608,7 @@ int main(int argc, char *argv[]) {
   // Layer-5
   Fc128LayerParam *bfc1 = nullptr;
   if (unified_mem) {
-    SAFE_ALOC_UM(bfc1, sizeof(bfc1));
+    SAFE_ALOC_UM(bfc1, sizeof(Fc128LayerParam));
     new (bfc1) Fc128LayerParam(
         "Fc1", batch, (l4b2c2->output_height) * (l4b2c2->output_width) * 512,
         512, unified_mem, um_tuning);
@@ -680,11 +687,16 @@ int main(int argc, char *argv[]) {
   cudaEventElapsedTime(&comp_time, comp_start, comp_stop);
   cudaEventElapsedTime(&comm_time, comm_start, comm_stop);
 
+  if (verbose)
+    printf("Time comp %f comm %f", comp_time, comm_time);
+
   // Oh nevermind, this once is not meant to be used by NCCL
-  CHECK_MPI(MPI_Gather(&comp_time, 1, MPI_FLOAT, &comp_times[dev], 1, MPI_FLOAT,
-                       0, MPI_COMM_WORLD));
-  CHECK_MPI(MPI_Gather(&comm_time, 1, MPI_FLOAT, &comm_times[dev], 1, MPI_FLOAT,
-                       0, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Gather(&comp_time, 1, MPI_FLOAT, comp_times.data(), 1,
+                       MPI_FLOAT, 0, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Gather(&comm_time, 1, MPI_FLOAT, comm_times.data(), 1,
+                       MPI_FLOAT, 0, MPI_COMM_WORLD));
+
+  CHECK_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
   //================ Output =================
   // if (i_gpu == 0)
@@ -705,15 +717,16 @@ int main(int argc, char *argv[]) {
       printf("\n===%f===\n", bout->bn_scale[0]);
   */
 
-  if (dev == 0) {
-    double avg_comp_time, avg_comm_time;
+  if (rank == 0) {
+    double avg_comp_time = 0.0;
+    double avg_comm_time = 0.0;
     for (int k = 0; k < n_gpu; k++) {
       avg_comp_time += comp_times[k];
       avg_comm_time += comm_times[k];
     }
 
-    avg_comp_time /= (double)n_gpu;
-    avg_comm_time /= (double)n_gpu;
+    avg_comp_time /= static_cast<double>(n_gpu);
+    avg_comm_time /= static_cast<double>(n_gpu);
 
     printf("\nComp_time:%.3lf, Comm_time:%.3lf\n", avg_comp_time,
            avg_comm_time);
