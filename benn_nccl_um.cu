@@ -314,7 +314,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (rank == 0)
-    printf("Starting ResNet-50 with batch: %u\n", batch);
+    printf("Starting ResNet-128 with batch: %u\n", batch);
 
   //================ Set Network =================
   // Layer-0
@@ -657,7 +657,7 @@ int main(int argc, char *argv[]) {
 
   cudaEventRecord(comp_stop);
   if (rank == 0)
-    printf("Completed Res-Net 50\nCollecting results\n");
+    printf("Completed ResNet-128... Collecting results\n");
   // if (i_gpu == 0) cudaMemset(bout->get_output_gpu(), 0,
   // bout->output_bytes()); if (i_gpu == 1)
   // cudaMemset(bout->get_output_gpu(), 0, bout->output_bytes());
@@ -694,23 +694,20 @@ int main(int argc, char *argv[]) {
   CHECK_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
   //================ Output =================
-  // if (i_gpu == 0)
-  //{
-  // float* output = bout->download_output();
-  // validate_prediction(output, image_labels, output_size, batch);
-  //}
+  if (rank == 0) {
+    float *output = bout->download_output();
+    validate_prediction(output, image_labels, output_size, batch);
+  }
 
-  /*
-      float* out = l1b2c1->download_full_output();
-      //float* out = l1b1c2->download_full_output();
-      //for (int i=0; i<512; i++)
-      for (int i=4096; i<4096+512; i++)
-      {
-          printf("%.f ", out[i]);
-          if ((i+1)%32==0) printf("\n");
-      }
-      printf("\n===%f===\n", bout->bn_scale[0]);
-  */
+  // float *out = l1b2c1->download_full_output();
+  // // float* out = l1b1c2->download_full_output();
+  // // for (int i=0; i<512; i++)
+  // for (int i = 4096; i < 4096 + 512; i++) {
+  //   printf("%.f ", out[i]);
+  //   if ((i + 1) % 32 == 0)
+  //     printf("\n");
+  // }
+  // printf("\n===%f===\n", bout->bn_scale[0]);
 
   if (rank == 0) {
     double avg_comp_time = 0.0;
