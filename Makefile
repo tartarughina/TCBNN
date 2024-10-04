@@ -22,7 +22,7 @@ JPEG_PATH = /home/tartarughina/libjpeg
 #all: cifar10_resnet mnist_mlp cifar10_vgg
 #all: imagenet_vgg imagenet_alexnet imagenet_resnet
 # all: imagenet_resnet cifar10_resnet mnist_mlp cifar10_vgg imagenet_alexnet imagenet_vgg
-all: benn_nccl
+all: benn_nccl benn_scaleup benn_scaleout
 
 #all: benn_scaleup
 
@@ -46,14 +46,16 @@ all: benn_nccl
 # imagenet_resnet: imagenet_resnet.cu param.h kernel.cuh data.h data.cpp utility.h
 # 	$(NVCC) $(NVCC_FLAG) -o $@ imagenet_resnet.cu data.cpp $(LIBS)
 
-# benn_scaleup: benn_scaleup.cu param.h kernel.cuh data.h data.cpp utility.h
-# 	$(NVCC) $(NVCC_FLAG) -Xcompiler -fopenmp -lnccl -I/home/lian599/opt/nccl_v1/include -L/home/lian599/opt/nccl_v1/lib -o $@ benn_scaleup.cu data.cpp $(LIBS)
+benn_scaleup: benn_scaleup.cu param.h kernel.cuh data.h data.cpp utility.h
+	$(NVCC) $(NVCC_FLAG) -Xcompiler -fopenmp -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -o $@ benn_scaleup.cu data.cpp $(LIBS)
 
-# benn_scaleout: benn_scaleout.cu param.h kernel.cuh data.h data.cpp utility.h
-#     $(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_scaleout.cu data.cpp $(LIBS)
+benn_scaleout: benn_scaleout.cu param.h kernel.cuh data.h data.cpp utility.h
+    $(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_scaleout.cu data.cpp $(LIBS)
+
 benn_nccl: benn_nccl_um.cu param.h kernel.cuh data.h data.cpp utility.h
 	$(NVCC) $(NVCC_FLAG) -lnccl -I$(NCCL_PATH)/include -L$(NCCL_PATH)/lib -ccbin mpicxx -o $@ benn_nccl_um.cu data.cpp $(LIBS) -I$(JPEG_PATH)/include -L$(JPEG_PATH)/lib64
 
 clean:
-	rm benn_nccl
-	# rm mnist_mlp cifar10_vgg cifar10_resnet
+	rm benn_nccl benn_scaleout benn_scaleup
+
+# rm mnist_mlp cifar10_vgg cifar10_resnet
