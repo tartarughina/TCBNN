@@ -189,7 +189,7 @@ void run(unsigned batch, float *pcomp_time, float *pcomm_time) {
   ncclGetUniqueId(&id);
   ncclComm_t comm[n_gpu];
 
-  const unsigned batch = 64;
+  // const unsigned batch = 64;
   const unsigned output_size = 1000;
   const unsigned image_height = 224;
   const unsigned image_width = 224;
