@@ -1,7 +1,7 @@
 import os
 
 def main():
-    alcf_path = '/lus/eagle/projects/datasets/ImageNet/ILSVRC/Data/CLS-LOC/train/'
+    alcf_path = '/eagle/datasets/ImageNet/ILSVRC/Data/CLS-LOC/train>/'
     with open('imagenet_files.txt') as f:
         lines = f.readlines()
 
