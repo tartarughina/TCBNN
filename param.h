@@ -132,9 +132,10 @@ public:
       if (um_tuning) {
         int device;
         cudaGetDevice(&device);
-        cudaMemAdvise(output, output_bit_bytes(), cudaMemAdviseAccessedBy, -1);
+        cudaMemAdvise(output, output_bit_bytes(), cudaMemAdviseSetAccessedBy,
+                      -1);
         cudaMemAdvise(output, output_bit_bytes(),
-                      cudaMemAdviseSetPrefferedLocation, device);
+                      cudaMemAdviseSetPreferredLocation, device);
       }
       output_gpu = output;
     } else {
@@ -193,8 +194,8 @@ public:
       if (um_tuning) {
         int device;
         cudaGetDevice(&device);
-        cudaMemAdvise(full_output, size, cudaMemAdviseAccessedBy, -1);
-        cudaMemAdvise(full_output, size, cudaMemAdviseSetPrefferedLocation,
+        cudaMemAdvise(full_output, size, cudaMemAdviseSetAccessedBy, -1);
+        cudaMemAdvise(full_output, size, cudaMemAdviseSetPreferredLocation,
                       device);
       }
     } else {

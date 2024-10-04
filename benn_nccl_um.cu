@@ -301,7 +301,7 @@ int main(int argc, char *argv[]) {
       cudaMemAdvise(images,
                     batch * image_height * image_width * image_channel *
                         sizeof(float),
-                    , cudaMemAdviseSetReadMostly, dev);
+                    cudaMemAdviseSetReadMostly, dev);
       cudaMemAdvise(image_labels, batch * sizeof(unsigned),
                     cudaMemAdviseSetPreferredLocation, dev);
       cudaMemAdvise(image_labels, batch * sizeof(unsigned),
@@ -321,7 +321,7 @@ int main(int argc, char *argv[]) {
                          batch * image_height * image_width * image_channel *
                              sizeof(float),
                          dev);
-    cudaMemPrefetchAsync(image_labels, batch * sizeof(unsigned) dev);
+    cudaMemPrefetchAsync(image_labels, batch * sizeof(unsigned), dev);
   }
 
   //================ Get Weight =================
