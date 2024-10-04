@@ -1379,6 +1379,7 @@ public:
       CHECK_NULL_POINTER(output_residual_gpu);
     if (inject_residual)
       CHECK_NULL_POINTER(input_residual_gpu);
+
     if (unified_mem) {
       if (um_tuning) {
         int device;

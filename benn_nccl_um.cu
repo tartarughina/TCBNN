@@ -418,7 +418,7 @@ int main(int argc, char *argv[]) {
   // Layer-2, basic-block-1, conv1
   Conv128LayerParam *l2b1c1 = nullptr;
   if (unified_mem) {
-    SAFE_ALOC_UM(l2b1c1, sizeof(Conv128Layer));
+    SAFE_ALOC_UM(l2b1c1, sizeof(Conv128LayerParam));
     new (l2b1c1)
         Conv128LayerParam("L2B1C1", l1b2c2->output_height, l1b2c2->output_width,
                           3, 3, 64, 128, batch, 2, 2, true, 1, 1, false, false,
@@ -518,7 +518,7 @@ int main(int argc, char *argv[]) {
   // Layer-3, basic-block-2, conv1
   Conv128LayerParam *l3b2c1 = nullptr;
   if (unified_mem) {
-    SAFE_ALOC_UM(l3b2c1, sizeof(InConv128LayerParam));
+    SAFE_ALOC_UM(l3b2c1, sizeof(Conv128LayerParam));
     new (l3b2c1)
         Conv128LayerParam("L3B2C1", l3b1c2->output_height, l3b1c2->output_width,
                           3, 3, 256, 256, batch, 1, 1, true, 1, 1, false, false,
