@@ -286,7 +286,8 @@ int main(int argc, char *argv[]) {
     image_labels = (unsigned *)malloc(batch * sizeof(unsigned));
   }
 
-  read_ImageNet_normalized("./imagenet_files.txt", images, image_labels, batch);
+  read_ImageNet_normalized("./polaris_imagenet_files.txt", images, image_labels,
+                           batch);
 
   //================ Get Weight =================
   FILE *config_file = fopen("./resnet_imagenet.csv", "r");
