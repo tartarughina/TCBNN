@@ -339,7 +339,7 @@ int main(int argc, char *argv[]) {
   // Layer-0
   InConv128LayerParam *bconv1 = nullptr;
   if (unified_mem) {
-    SAFE_ALOC_UM(bconv1, sizeof(In128LayerParam));
+    SAFE_ALOC_UM(bconv1, sizeof(InConv128LayerParam));
     new (bconv1) InConv128LayerParam("Conv1", image_height, image_width, 7, 7,
                                      3, 64, batch, 4, 4, true, 1, 1, true,
                                      unified_mem, um_tuning); // save residual
