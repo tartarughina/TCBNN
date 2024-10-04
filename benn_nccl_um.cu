@@ -190,8 +190,10 @@ static void usage(const char *pname) {
           "\t\tUse unified memory for data arrays. (default: false) \n"
           "\t-t|--um_tuning\n"
           "\t\tEnable unified memory tuning. (default: false) \n"
-          "\t-v|--verbose\n"
-          "\t\tEnable verbose logs. (default: false)\n",
+          "\t-b|--batch\n"
+          "\t\tSet batch size. (default: 64) \n",
+          // "\t-v|--verbose\n"
+          // "\t\tEnable verbose logs. (default: false)\n",
           bname);
   exit(EXIT_SUCCESS);
 }
@@ -200,7 +202,8 @@ int main(int argc, char *argv[]) {
   int n_gpu, i_gpu, rank;
   bool unified_mem = false;
   bool um_tuning = false;
-  bool verbose = false;
+  unsigned batch = 64;
+  // bool verbose = false;
 
   MPI_Comm local_comm;
 
@@ -210,13 +213,14 @@ int main(int argc, char *argv[]) {
 
   static struct option long_options[] = {{"unified_mem", no_argument, 0, 'u'},
                                          {"um_tuning", no_argument, 0, 't'},
-                                         {"verbose", no_argument, 0, 'v'},
+                                         // {"verbose", no_argument, 0, 'v'},
+                                         {"batch", required_argument, 0, 'b'},
                                          {"help", no_argument, 0, 'h'},
                                          {0, 0, 0, 0}};
 
   while (1) {
     int option_index = 0;
-    int ch = getopt_long(argc, argv, "utvh", long_options, &option_index);
+    int ch = getopt_long(argc, argv, "utb:h", long_options, &option_index);
     if (ch == -1)
       break;
 
@@ -229,9 +233,12 @@ int main(int argc, char *argv[]) {
     case 't':
       um_tuning = true;
       break;
-    case 'v':
-      verbose = true;
+    case 'b':
+      batch = atoi(optarg);
       break;
+    // case 'v':
+    //   verbose = true;
+    //   break;
     case 'h':
       usage(argv[0]);
       break;
@@ -248,14 +255,10 @@ int main(int argc, char *argv[]) {
                                 MPI_INFO_NULL, &local_comm));
   CHECK_MPI(MPI_Comm_rank(local_comm, &i_gpu));
 
-  if (verbose) {
-    printf("rank %d, i_gpu %d\n", rank, i_gpu);
-  }
-
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
 
-  vector<float> comp_times = vector<float>(n_gpu, 0);
-  vector<float> comm_times = vector<float>(n_gpu, 0);
+  vector<float> comp_times;
+  vector<float> comm_times;
 
   ncclUniqueId id;
 
@@ -268,9 +271,6 @@ int main(int argc, char *argv[]) {
   CHECK_MPI(MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
 
-  if (verbose)
-    printf("NCCL initialized\n");
-
   MPI_Barrier(MPI_COMM_WORLD);
   cudaEvent_t comp_start, comp_stop, comm_start, comm_stop;
   CUDA_SAFE_CALL(cudaEventCreate(&comp_start));
@@ -279,7 +279,6 @@ int main(int argc, char *argv[]) {
   CUDA_SAFE_CALL(cudaEventCreate(&comm_stop));
 
   int dev = i_gpu;
-  const unsigned batch = 64;
   const unsigned output_size = 1000;
   const unsigned image_height = 224;
   const unsigned image_width = 224;
@@ -289,8 +288,6 @@ int main(int argc, char *argv[]) {
   float *images = nullptr;
   unsigned *image_labels = nullptr;
 
-  if (verbose)
-    printf("Memory allocation\n");
   if (unified_mem) {
     SAFE_ALOC_UM(images, batch * image_height * image_width * image_channel *
                              sizeof(float));
@@ -305,13 +302,9 @@ int main(int argc, char *argv[]) {
     image_labels = (unsigned *)malloc(batch * sizeof(unsigned));
   }
 
-  if (verbose)
-    printf("Reading images from dataset\n");
   read_ImageNet_normalized("./polaris_imagenet_files.txt", images, image_labels,
                            batch);
 
-  if (verbose)
-    printf("Completed reading images\n");
   //================ Get Weight =================
   FILE *config_file = fopen("./resnet_imagenet.csv", "r");
 
@@ -320,11 +313,10 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  if (verbose)
-    printf("Completed reading config file\n");
+  if (rank == 0)
+    printf("Starting ResNet-50 with batch: %u\n", batch);
+
   //================ Set Network =================
-  if (verbose)
-    printf("Setting network\n");
   // Layer-0
   InConv128LayerParam *bconv1 = nullptr;
   if (unified_mem) {
@@ -664,10 +656,11 @@ int main(int argc, char *argv[]) {
                               numThreads, args, shared_memory);
 
   cudaEventRecord(comp_stop);
-
+  if (rank == 0)
+    printf("Completed Res-Net 50\nCollecting results\n");
   // if (i_gpu == 0) cudaMemset(bout->get_output_gpu(), 0,
-  // bout->output_bytes()); if (i_gpu == 1) cudaMemset(bout->get_output_gpu(),
-  // 0, bout->output_bytes());
+  // bout->output_bytes()); if (i_gpu == 1)
+  // cudaMemset(bout->get_output_gpu(), 0, bout->output_bytes());
 
   cudaEventRecord(comm_start);
 
@@ -687,8 +680,10 @@ int main(int argc, char *argv[]) {
   cudaEventElapsedTime(&comp_time, comp_start, comp_stop);
   cudaEventElapsedTime(&comm_time, comm_start, comm_stop);
 
-  if (verbose)
-    printf("Time comp %f comm %f", comp_time, comm_time);
+  if (rank == 0) {
+    comm_times.resize(n_gpu, 0);
+    comp_times.resize(n_gpu, 0);
+  }
 
   // Oh nevermind, this once is not meant to be used by NCCL
   CHECK_MPI(MPI_Gather(&comp_time, 1, MPI_FLOAT, comp_times.data(), 1,
@@ -720,6 +715,7 @@ int main(int argc, char *argv[]) {
   if (rank == 0) {
     double avg_comp_time = 0.0;
     double avg_comm_time = 0.0;
+
     for (int k = 0; k < n_gpu; k++) {
       avg_comp_time += comp_times[k];
       avg_comm_time += comm_times[k];
