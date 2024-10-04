@@ -189,7 +189,9 @@ static void usage(const char *pname) {
           "\t-u|--unified_mem\n"
           "\t\tUse unified memory for data arrays. (default: false) \n"
           "\t-t|--um_tuning\n"
-          "\t\tEnable unified memory tuning. (default: false) \n",
+          "\t\tEnable unified memory tuning. (default: false) \n"
+          "\t-v|--verbose\n"
+          "\t\tEnable verbose logs. (default: false)\n",
           bname);
   exit(EXIT_SUCCESS);
 }
@@ -202,9 +204,9 @@ int main(int argc, char *argv[]) {
 
   MPI_Comm local_comm;
 
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &n_gpu);
+  CHECK_MPI(MPI_Init(&argc, &argv));
+  CHECK_MPI(MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+  CHECK_MPI(MPI_Comm_size(MPI_COMM_WORLD, &n_gpu));
 
   static struct option long_options[] = {{"unified_mem", no_argument, 0, 'u'},
                                          {"um_tuning", no_argument, 0, 't'},
@@ -242,9 +244,9 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
-                      &local_comm);
-  MPI_Comm_rank(local_comm, &i_gpu);
+  CHECK_MPI(MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank,
+                                MPI_INFO_NULL, &local_comm));
+  CHECK_MPI(MPI_Comm_rank(local_comm, &i_gpu));
 
   if (verbose) {
     printf("rank %d, i_gpu %d\n", rank, i_gpu);
@@ -262,7 +264,7 @@ int main(int argc, char *argv[]) {
     ncclGetUniqueId(&id);
   }
 
-  MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
+  CHECK_MPI(MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
 
   if (verbose)
@@ -283,8 +285,8 @@ int main(int argc, char *argv[]) {
   const unsigned image_channel = 3;
 
   //=============== Get Input and Label =================
-  float *images;
-  unsigned *image_labels;
+  float *images = nullptr;
+  unsigned *image_labels = nullptr;
 
   if (verbose)
     printf("Memory allocation\n");
@@ -677,11 +679,12 @@ int main(int argc, char *argv[]) {
 
   cudaEventElapsedTime(&comp_time, comp_start, comp_stop);
   cudaEventElapsedTime(&comm_time, comm_start, comm_stop);
+
   // Oh nevermind, this once is not meant to be used by NCCL
-  MPI_Gather(&comp_time, 1, MPI_FLOAT, &comp_times[dev], 1, MPI_FLOAT, 0,
-             MPI_COMM_WORLD);
-  MPI_Gather(&comm_time, 1, MPI_FLOAT, &comm_times[dev], 1, MPI_FLOAT, 0,
-             MPI_COMM_WORLD);
+  CHECK_MPI(MPI_Gather(&comp_time, 1, MPI_FLOAT, &comp_times[dev], 1, MPI_FLOAT,
+                       0, MPI_COMM_WORLD));
+  CHECK_MPI(MPI_Gather(&comm_time, 1, MPI_FLOAT, &comm_times[dev], 1, MPI_FLOAT,
+                       0, MPI_COMM_WORLD));
 
   //================ Output =================
   // if (i_gpu == 0)

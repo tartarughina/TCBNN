@@ -98,6 +98,15 @@ inline void __checkNullPointer(const char *file, const int line, void **ptr) {
     }                                                                          \
   } while (0)
 
+#define CHECK_MPI(cmd)                                                         \
+  do {                                                                         \
+    int r = cmd;                                                               \
+    if (r != MPI_SUCCESS) {                                                    \
+      printf("MPI error %s: %d '%s'\n", __FILE__, __LINE__, "MPI error");      \
+      exit(EXIT_FAILURE);                                                      \
+    }                                                                          \
+  } while (0)
+
 //================ Allocation and Free ===============
 // CPU host allocation
 #define SAFE_ALOC_HOST(X, Y) CUDA_SAFE_CALL(cudaMallocHost((void **)&(X), (Y)));
