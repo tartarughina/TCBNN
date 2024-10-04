@@ -131,11 +131,12 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(output, output_bit_bytes(), cudaMemAdviseSetAccessedBy,
-                      -1);
-        cudaMemAdvise(output, output_bit_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output, output_bit_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
+        CUDA_SAFE_CALL(cudaMemAdvise(output, output_bit_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
       }
       output_gpu = output;
     } else {
@@ -155,8 +156,9 @@ public:
     if (unified_mem) {
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(this, sizeof(In128LayerParam), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(
+            cudaMemPrefetchAsync(this, sizeof(In128LayerParam), device));
       }
 
       return this;
@@ -178,7 +180,7 @@ public:
     }
 
     if (um_tuning)
-      cudaMemPrefetchAsync(output, output_bit_bytes(), -1);
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(output, output_bit_bytes(), -1));
 
     return this->output;
   }
@@ -193,10 +195,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(full_output, size, cudaMemAdviseSetAccessedBy, -1);
-        cudaMemAdvise(full_output, size, cudaMemAdviseSetPreferredLocation,
-                      device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(
+            cudaMemAdvise(full_output, size, cudaMemAdviseSetAccessedBy, -1));
+        CUDA_SAFE_CALL(cudaMemAdvise(
+            full_output, size, cudaMemAdviseSetPreferredLocation, device));
       }
     } else {
       SAFE_ALOC_HOST(full_output, size);
@@ -229,7 +232,7 @@ public:
     }
 
     if (um_tuning)
-      cudaMemPrefetchAsync(full_output, size, -1);
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(full_output, size, -1));
 
     return full_output;
   }
@@ -306,8 +309,9 @@ public:
     if (unified_mem) {
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(this, sizeof(Fc128LayerParam), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(
+            cudaMemPrefetchAsync(this, sizeof(Fc128LayerParam), device));
       }
       return this;
     } else {
@@ -326,13 +330,14 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(weight, weight_bytes(), cudaMemAdviseSetPreferredLocation,
-                      -1);
-        cudaMemAdvise(weight, weight_bytes(), cudaMemAdviseSetReadMostly,
-                      device);
-        cudaMemAdvise(weight_gpu, weight_bit_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(weight, weight_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(cudaMemAdvise(weight, weight_bytes(),
+                                     cudaMemAdviseSetReadMostly, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(weight_gpu, weight_bit_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
       }
     } else {
       SAFE_ALOC_HOST(weight, weight_bytes());
@@ -350,8 +355,8 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(weight, weight_bytes(), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemPrefetchAsync(weight, weight_bytes(), device));
       }
     } else {
       SAFE_ALOC_GPU(weight_float, weight_bytes());
@@ -387,9 +392,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetPreferredLocation, -1);
-        cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetReadMostly, device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn, bn_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(
+            cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetReadMostly, device));
       }
     } else
       SAFE_ALOC_HOST(bn, bn_bytes());
@@ -404,8 +411,8 @@ public:
 
     if (um_tuning) {
       int device;
-      cudaGetDevice(&device);
-      cudaMemPrefetchAsync(bn, bn_bytes(), device);
+      CUDA_SAFE_CALL(cudaGetDevice(&device));
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(bn, bn_bytes(), device));
     }
 
     // Allocate output gpu
@@ -415,11 +422,12 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(output_gpu, output_bit_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
-        cudaMemAdvise(output_gpu, output_bit_bytes(),
-                      cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output_gpu, output_bit_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output_gpu, output_bit_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_GPU(output_gpu, output_bit_bytes());
@@ -440,7 +448,7 @@ public:
     }
 
     if (um_tuning)
-      cudaMemPrefetchAsync(output, output_bit_bytes(), -1);
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(output, output_bit_bytes(), -1));
     return this->output;
   }
   float *download_full_output() {
@@ -454,10 +462,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(full_output, size, cudaMemAdviseSetPreferredLocation,
-                      device);
-        cudaMemAdvise(full_output, size, cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(
+            full_output, size, cudaMemAdviseSetPreferredLocation, device));
+        CUDA_SAFE_CALL(
+            cudaMemAdvise(full_output, size, cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_HOST(full_output, size);
@@ -489,7 +498,7 @@ public:
     }
 
     if (um_tuning) {
-      cudaMemPrefetchAsync(full_output, size, -1);
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(full_output, size, -1));
     }
     return full_output;
   }
@@ -575,8 +584,9 @@ public:
     if (unified_mem) {
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(this, sizeof(Out128LayerParam), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(
+            cudaMemPrefetchAsync(this, sizeof(Out128LayerParam), device));
       }
 
       return this;
@@ -598,13 +608,14 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(weight, weight_bytes(), cudaMemAdviseSetPreferredLocation,
-                      -1);
-        cudaMemAdvise(weight, weight_bytes(), cudaMemAdviseSetReadMostly,
-                      device);
-        cudaMemAdvise(weight_gpu, weight_bit_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(weight, weight_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(cudaMemAdvise(weight, weight_bytes(),
+                                     cudaMemAdviseSetReadMostly, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(weight_gpu, weight_bit_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
       }
     } else {
       SAFE_ALOC_HOST(weight, weight_bytes());
@@ -621,8 +632,8 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(weight, weight_bytes(), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemPrefetchAsync(weight, weight_bytes(), device));
       }
     } else {
       SAFE_ALOC_GPU(weight_float, weight_bytes());
@@ -662,16 +673,19 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(bn_scale, bn_bytes(), cudaMemAdviseSetPreferredLocation,
-                      -1);
-        cudaMemAdvise(bn_scale, bn_bytes(), cudaMemAdviseSetReadMostly, device);
-        cudaMemAdvise(bn_bias, bn_bytes(), cudaMemAdviseSetPreferredLocation,
-                      -1);
-        cudaMemAdvise(bn_bias, bn_bytes(), cudaMemAdviseSetReadMostly, device);
-        cudaMemAdvise(output, output_bytes(), cudaMemAdviseSetPreferredLocation,
-                      device);
-        cudaMemAdvise(output, output_bytes(), cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn_scale, bn_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn_scale, bn_bytes(),
+                                     cudaMemAdviseSetReadMostly, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn_bias, bn_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn_bias, bn_bytes(),
+                                     cudaMemAdviseSetReadMostly, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(
+            output, output_bytes(), cudaMemAdviseSetPreferredLocation, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output, output_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_HOST(bn_scale, bn_bytes());
@@ -694,9 +708,9 @@ public:
 
     if (um_tuning) {
       int device;
-      cudaGetDevice(&device);
-      cudaMemPrefetchAsync(bn_scale, bn_bytes(), device);
-      cudaMemPrefetchAsync(bn_bias, bn_bytes(), device);
+      CUDA_SAFE_CALL(cudaGetDevice(&device));
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(bn_scale, bn_bytes(), device));
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(bn_bias, bn_bytes(), device));
     }
     CUDA_SAFE_CALL(cudaMemset(this->output_gpu, 0, output_bytes()));
     set_input_gpu(prev_layer_gpu);
@@ -710,7 +724,7 @@ public:
     }
 
     if (um_tuning) {
-      cudaMemPrefetchAsync(this->output, output_bytes(), -1);
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(this->output, output_bytes(), -1));
     }
 
     return this->output;
@@ -1000,8 +1014,9 @@ public:
 
     if (um_tuning) {
       int device;
-      cudaGetDevice(&device);
-      cudaMemPrefetchAsync(this, sizeof(InConv128LayerParam), device);
+      CUDA_SAFE_CALL(cudaGetDevice(&device));
+      CUDA_SAFE_CALL(
+          cudaMemPrefetchAsync(this, sizeof(InConv128LayerParam), device));
     }
 
     return this;
@@ -1050,10 +1065,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(filter, filter_bytes(), cudaMemAdviseSetPreferredLocation,
-                      device);
-        cudaMemAdvise(filter, filter_bytes(), cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(
+            filter, filter_bytes(), cudaMemAdviseSetPreferredLocation, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(filter, filter_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_GPU(input_gpu, input_bytes());
@@ -1072,8 +1088,8 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(filter, filter_bytes(), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemPrefetchAsync(filter, filter_bytes(), device));
       }
     } else {
       SAFE_ALOC_GPU(filter_gpu, filter_bit_bytes());
@@ -1098,9 +1114,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetPreferredLocation, -1);
-        cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetReadMostly, device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn, bn_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(
+            cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetReadMostly, device));
       }
     } else {
       SAFE_ALOC_HOST(bn, bn_bytes());
@@ -1115,8 +1133,8 @@ public:
 
     if (um_tuning) {
       int device;
-      cudaGetDevice(&device);
-      cudaMemPrefetchAsync(bn, bn_bytes(), device);
+      CUDA_SAFE_CALL(cudaGetDevice(&device));
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(bn, bn_bytes(), device));
     }
     // Allocate output
     if (unified_mem) {
@@ -1125,11 +1143,12 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(output_gpu, output_bit_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
-        cudaMemAdvise(output_gpu, output_bit_bytes(),
-                      cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output_gpu, output_bit_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output_gpu, output_bit_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_GPU(output_gpu, output_bit_bytes());
@@ -1155,7 +1174,8 @@ public:
   unsigned *download_output() {
     if (unified_mem) {
       if (um_tuning) {
-        cudaMemPrefetchAsync(output_gpu, output_bit_bytes(), -1);
+        CUDA_SAFE_CALL(
+            cudaMemPrefetchAsync(output_gpu, output_bit_bytes(), -1));
       }
 
       return this->output_gpu;
@@ -1176,11 +1196,12 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(full_output, output_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
-        cudaMemAdvise(full_output, output_bytes(), cudaMemAdviseSetAccessedBy,
-                      -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(full_output, output_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
+        CUDA_SAFE_CALL(cudaMemAdvise(full_output, output_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_HOST(full_output, output_bytes());
@@ -1361,8 +1382,9 @@ public:
     if (unified_mem) {
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(this, sizeof(Conv128LayerParam), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(
+            cudaMemPrefetchAsync(this, sizeof(Conv128LayerParam), device));
       }
 
       return this;
@@ -1387,10 +1409,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(filter, filter_bytes(), cudaMemAdviseSetPreferredLocation,
-                      device);
-        cudaMemAdvise(filter, filter_bytes(), cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(
+            filter, filter_bytes(), cudaMemAdviseSetPreferredLocation, device));
+        CUDA_SAFE_CALL(cudaMemAdvise(filter, filter_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_HOST(filter, filter_bytes());
@@ -1407,8 +1430,8 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(filter, filter_bytes(), device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemPrefetchAsync(filter, filter_bytes(), device));
       }
     } else {
       SAFE_ALOC_GPU(filter_float, filter_bytes());
@@ -1436,9 +1459,11 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetPreferredLocation, -1);
-        cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetReadMostly, device);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(bn, bn_bytes(),
+                                     cudaMemAdviseSetPreferredLocation, -1));
+        CUDA_SAFE_CALL(
+            cudaMemAdvise(bn, bn_bytes(), cudaMemAdviseSetReadMostly, device));
       }
     } else {
       SAFE_ALOC_HOST(bn, bn_bytes());
@@ -1453,8 +1478,8 @@ public:
 
     if (um_tuning) {
       int device;
-      cudaGetDevice(&device);
-      cudaMemPrefetchAsync(bn_gpu, bn_bytes(), device);
+      CUDA_SAFE_CALL(cudaGetDevice(&device));
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(bn_gpu, bn_bytes(), device));
     }
     // Allocate output gpu
     if (unified_mem) {
@@ -1463,11 +1488,12 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(output_gpu, output_bit_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
-        cudaMemAdvise(output_gpu, output_bit_bytes(),
-                      cudaMemAdviseSetAccessedBy, -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output_gpu, output_bit_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
+        CUDA_SAFE_CALL(cudaMemAdvise(output_gpu, output_bit_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_GPU(output_gpu, output_bit_bytes());
@@ -1481,11 +1507,12 @@ public:
 
         if (um_tuning) {
           int device;
-          cudaGetDevice(&device);
-          cudaMemAdvise(output_residual_gpu, residual_bytes(),
-                        cudaMemAdviseSetPreferredLocation, device);
-          cudaMemAdvise(output_residual_gpu, residual_bytes(),
-                        cudaMemAdviseSetAccessedBy, -1);
+          CUDA_SAFE_CALL(cudaGetDevice(&device));
+          CUDA_SAFE_CALL(cudaMemAdvise(output_residual_gpu, residual_bytes(),
+                                       cudaMemAdviseSetPreferredLocation,
+                                       device));
+          CUDA_SAFE_CALL(cudaMemAdvise(output_residual_gpu, residual_bytes(),
+                                       cudaMemAdviseSetAccessedBy, -1));
         }
       } else {
         SAFE_ALOC_GPU(output_residual_gpu, residual_bytes());
@@ -1505,8 +1532,9 @@ public:
     if (unified_mem) {
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemPrefetchAsync(this->output, output_bit_bytes(), -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(
+            cudaMemPrefetchAsync(this->output, output_bit_bytes(), -1));
       }
 
       return this->output;
@@ -1528,11 +1556,12 @@ public:
 
       if (um_tuning) {
         int device;
-        cudaGetDevice(&device);
-        cudaMemAdvise(full_output, output_bytes(),
-                      cudaMemAdviseSetPreferredLocation, device);
-        cudaMemAdvise(full_output, output_bytes(), cudaMemAdviseSetAccessedBy,
-                      -1);
+        CUDA_SAFE_CALL(cudaGetDevice(&device));
+        CUDA_SAFE_CALL(cudaMemAdvise(full_output, output_bytes(),
+                                     cudaMemAdviseSetPreferredLocation,
+                                     device));
+        CUDA_SAFE_CALL(cudaMemAdvise(full_output, output_bytes(),
+                                     cudaMemAdviseSetAccessedBy, -1));
       }
     } else {
       SAFE_ALOC_HOST(full_output, output_bytes());
@@ -1555,7 +1584,7 @@ public:
       SAFE_FREE_GPU(full_output_gpu);
     }
     if (um_tuning) {
-      cudaMemPrefetchAsync(full_output, output_bytes(), -1);
+      CUDA_SAFE_CALL(cudaMemPrefetchAsync(full_output, output_bytes(), -1));
     }
     return full_output;
   }
