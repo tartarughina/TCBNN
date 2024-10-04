@@ -11,6 +11,7 @@
 #include "utility.h"
 #include <assert.h>
 #include <cooperative_groups.h>
+#include <cstdio>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
@@ -197,6 +198,7 @@ int main(int argc, char *argv[]) {
   int n_gpu, i_gpu, rank;
   bool unified_mem = false;
   bool um_tuning = false;
+  bool verbose = false;
 
   MPI_Comm local_comm;
 
@@ -206,12 +208,13 @@ int main(int argc, char *argv[]) {
 
   static struct option long_options[] = {{"unified_mem", no_argument, 0, 'u'},
                                          {"um_tuning", no_argument, 0, 't'},
+                                         {"verbose", no_argument, 0, 'v'},
                                          {"help", no_argument, 0, 'h'},
                                          {0, 0, 0, 0}};
 
   while (1) {
     int option_index = 0;
-    int ch = getopt_long(argc, argv, "uth", long_options, &option_index);
+    int ch = getopt_long(argc, argv, "utvh", long_options, &option_index);
     if (ch == -1)
       break;
 
@@ -223,6 +226,9 @@ int main(int argc, char *argv[]) {
       break;
     case 't':
       um_tuning = true;
+      break;
+    case 'v':
+      verbose = true;
       break;
     case 'h':
       usage(argv[0]);
@@ -239,6 +245,11 @@ int main(int argc, char *argv[]) {
   MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, rank, MPI_INFO_NULL,
                       &local_comm);
   MPI_Comm_rank(local_comm, &i_gpu);
+
+  if (verbose) {
+    printf("rank %d, i_gpu %d\n", rank, i_gpu);
+  }
+
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
   float comp_times[8] = {0};
   float comm_times[8] = {0};
@@ -253,6 +264,9 @@ int main(int argc, char *argv[]) {
 
   MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
+
+  if (verbose)
+    printf("NCCL initialized\n");
 
   MPI_Barrier(MPI_COMM_WORLD);
   cudaEvent_t comp_start, comp_stop, comm_start, comm_stop;
@@ -272,6 +286,8 @@ int main(int argc, char *argv[]) {
   float *images;
   unsigned *image_labels;
 
+  if (verbose)
+    printf("Memory allocation\n");
   if (unified_mem) {
     SAFE_ALOC_UM(images, batch * image_height * image_width * image_channel *
                              sizeof(float));
@@ -286,13 +302,21 @@ int main(int argc, char *argv[]) {
     image_labels = (unsigned *)malloc(batch * sizeof(unsigned));
   }
 
+  if (verbose)
+    printf("Reading images from dataset\n");
   read_ImageNet_normalized("./polaris_imagenet_files.txt", images, image_labels,
                            batch);
 
+  if (verbose)
+    printf("Completed reading images\n");
   //================ Get Weight =================
   FILE *config_file = fopen("./resnet_imagenet.csv", "r");
 
+  if (verbose)
+    printf("Completed reading config file\n");
   //================ Set Network =================
+  if (verbose)
+    printf("Setting network\n");
   // Layer-0
   InConv128LayerParam *bconv1 = nullptr;
   if (unified_mem) {
