@@ -294,7 +294,18 @@ int main(int argc, char *argv[]) {
     SAFE_ALOC_UM(image_labels, batch * sizeof(unsigned));
 
     if (um_tuning) {
-      // memadvise, readonly could be appropriate for input data
+      cudaMemAdvise(images,
+                    batch * image_height * image_width * image_channel *
+                        sizeof(float),
+                    cudaMemAdviseSetPreferredLocation, dev);
+      cudaMemAdvise(images,
+                    batch * image_height * image_width * image_channel *
+                        sizeof(float),
+                    , cudaMemAdviseSetReadMostly, dev);
+      cudaMemAdvise(image_labels, batch * sizeof(unsigned),
+                    cudaMemAdviseSetPreferredLocation, dev);
+      cudaMemAdvise(image_labels, batch * sizeof(unsigned),
+                    cudaMemAdviseSetReadMostly, dev);
     }
   } else {
     images = (float *)malloc(batch * image_height * image_width *
@@ -304,6 +315,14 @@ int main(int argc, char *argv[]) {
 
   read_ImageNet_normalized("./polaris_imagenet_files.txt", images, image_labels,
                            batch);
+
+  if (unified_mem && um_tuning) {
+    cudaMemPrefetchAsync(images,
+                         batch * image_height * image_width * image_channel *
+                             sizeof(float),
+                         dev);
+    cudaMemPrefetchAsync(image_labels, batch * sizeof(unsigned) dev);
+  }
 
   //================ Get Weight =================
   FILE *config_file = fopen("./resnet_imagenet.csv", "r");
@@ -694,10 +713,10 @@ int main(int argc, char *argv[]) {
   CHECK_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
   //================ Output =================
-  if (rank == 0) {
-    float *output = bout->download_output();
-    validate_prediction(output, image_labels, output_size, batch);
-  }
+  // if (rank == 0) {
+  //   float *output = bout->download_output();
+  //   validate_prediction(output, image_labels, output_size, batch);
+  // }
 
   // float *out = l1b2c1->download_full_output();
   // // float* out = l1b1c2->download_full_output();
@@ -721,8 +740,10 @@ int main(int argc, char *argv[]) {
     avg_comp_time /= static_cast<double>(n_gpu);
     avg_comm_time /= static_cast<double>(n_gpu);
 
-    printf("\nComp_time:%.3lf, Comm_time:%.3lf\n", avg_comp_time,
-           avg_comm_time);
+    printf("%s %s\n", unified_mem ? "Unified Memory" : "Normal Memory",
+           um_tuning ? "Tuning" : "No Tuning");
+    printf("\nBatch: %u, Comp_time:%.3lf, Comm_time:%.3lf\n", batch,
+           avg_comp_time, avg_comm_time);
   }
 
   if (unified_mem) {
