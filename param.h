@@ -1158,6 +1158,11 @@ public:
     // Allocate residual for saving
     if (save_residual) {
       if (unified_mem) {
+        size_t free_mem, total_mem;
+        cudaMemGetInfo(&free_mem, &total_mem);
+        double used_mem = (total_mem - free_mem) / (1024 * 1024);
+        printf("Allocated memory with %d batch %f\n", batch, used_mem);
+        printf("Residual bytes %d\n", residual_bytes());
         SAFE_ALOC_UM(output_residual_gpu, residual_bytes());
       } else {
         SAFE_ALOC_GPU(output_residual_gpu, residual_bytes());
