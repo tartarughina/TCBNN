@@ -647,7 +647,7 @@ int main(int argc, char *argv[]) {
   //============= Memory Allocation ===============
 
   size_t free_mem, total_mem;
-  CHECK_CUDA_EXIT(cudaMemGetInfo(&free_mem, &total_mem));
+  cudaMemGetInfo(&free_mem, &total_mem);
   double used_mem = (total_mem - free_mem) / (1024 * 1024);
   printf("Allocated memory with %d batch %f\n", batch, used_mem);
   exit(1);
