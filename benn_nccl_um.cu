@@ -644,6 +644,14 @@ int main(int argc, char *argv[]) {
   Out128LayerParam *bout_gpu =
       bout->initialize(config_file, bfc1->get_output_gpu());
 
+  //============= Memory Allocation ===============
+
+  size_t free_mem, total_mem;
+  CHECK_CUDA_EXIT(cudaMemGetInfo(&free_mem, &total_mem));
+  double used_mem = (total_mem - free_mem) / (1024 * 1024);
+  printf("Allocated memory with %d batch %f\n", batch, used_mem);
+  exit(1);
+
   //================ Setup Kernel =================
   int numThreads = 1024;
   cudaDeviceProp deviceProp;
