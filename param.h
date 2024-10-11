@@ -1417,7 +1417,7 @@ public:
   size_t bn_bytes() { return bn_size() * sizeof(float); }
   size_t residual_size() {
     return PAD128(static_cast<size_t>(output_channels)) *
-           PAD8(static_size<size_t>(batch)) * output_height * output_width;
+           PAD8(static_cast<size_t>(batch)) * output_height * output_width;
   }
   size_t residual_bytes() { return residual_size() * sizeof(int); }
 
