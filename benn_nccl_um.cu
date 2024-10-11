@@ -257,6 +257,7 @@ int main(int argc, char *argv[]) {
 
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
 
+  vector<float> init_times;
   vector<float> comp_times;
   vector<float> comm_times;
 
@@ -272,7 +273,11 @@ int main(int argc, char *argv[]) {
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
 
   MPI_Barrier(MPI_COMM_WORLD);
-  cudaEvent_t comp_start, comp_stop, comm_start, comm_stop;
+  cudaEvent_t init_start, init_stop, comp_start, comp_stop, comm_start,
+      comm_stop;
+
+  CUDA_SAFE_CALL(cudaEventCreate(&init_start));
+  CUDA_SAFE_CALL(cudaEventCreate(&init_stop));
   CUDA_SAFE_CALL(cudaEventCreate(&comp_start));
   CUDA_SAFE_CALL(cudaEventCreate(&comp_stop));
   CUDA_SAFE_CALL(cudaEventCreate(&comm_start));
@@ -287,6 +292,8 @@ int main(int argc, char *argv[]) {
   //=============== Get Input and Label =================
   float *images = nullptr;
   unsigned *image_labels = nullptr;
+
+  CUDA_SAFE_CALL(cudaEventRecord(init_start));
 
   if (unified_mem) {
     SAFE_ALOC_UM(images, batch * image_height * image_width * image_channel *
@@ -644,13 +651,15 @@ int main(int argc, char *argv[]) {
   Out128LayerParam *bout_gpu =
       bout->initialize(config_file, bfc1->get_output_gpu());
 
+  CUDA_SAFE_CALL(cudaEventRecord(init_stop));
+
   //============= Memory Allocation ===============
 
-  size_t free_mem, total_mem;
-  cudaMemGetInfo(&free_mem, &total_mem);
-  double used_mem = (total_mem - free_mem) / (1024 * 1024);
-  printf("Allocated memory with %d batch %f\n", batch, used_mem);
-  exit(1);
+  // size_t free_mem, total_mem;
+  // cudaMemGetInfo(&free_mem, &total_mem);
+  // double used_mem = (total_mem - free_mem) / (1024 * 1024);
+  // printf("Allocated memory with %d batch %f\n", batch, used_mem);
+  // exit(1);
 
   //================ Setup Kernel =================
   int numThreads = 1024;
@@ -702,17 +711,20 @@ int main(int argc, char *argv[]) {
 
   // STOP_TIMER;
   CUDA_SAFE_CALL(cudaDeviceSynchronize());
-  float comp_time, comm_time;
+  float init_time, comp_time, comm_time;
 
+  cudaEventElapsedTime(&init_time, init_start, init_stop);
   cudaEventElapsedTime(&comp_time, comp_start, comp_stop);
   cudaEventElapsedTime(&comm_time, comm_start, comm_stop);
 
   if (rank == 0) {
+    init_times.resize(n_gpu, 0);
     comm_times.resize(n_gpu, 0);
     comp_times.resize(n_gpu, 0);
   }
 
-  // Oh nevermind, this once is not meant to be used by NCCL
+  CHECK_MPI(MPI_Gather(&init_time, 1, MPI_FLOAT, init_times.data(), 1,
+                       MPI_FLOAT, 0, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Gather(&comp_time, 1, MPI_FLOAT, comp_times.data(), 1,
                        MPI_FLOAT, 0, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Gather(&comm_time, 1, MPI_FLOAT, comm_times.data(), 1,
@@ -737,21 +749,24 @@ int main(int argc, char *argv[]) {
   // printf("\n===%f===\n", bout->bn_scale[0]);
 
   if (rank == 0) {
+    double avg_init_time = 0.0;
     double avg_comp_time = 0.0;
     double avg_comm_time = 0.0;
 
     for (int k = 0; k < n_gpu; k++) {
+      avg_init_time += init_times[k];
       avg_comp_time += comp_times[k];
       avg_comm_time += comm_times[k];
     }
 
+    avg_init_time /= static_cast<double>(n_gpu);
     avg_comp_time /= static_cast<double>(n_gpu);
     avg_comm_time /= static_cast<double>(n_gpu);
 
     printf("%s %s\n", unified_mem ? "Unified Memory" : "Normal Memory",
            um_tuning ? "Tuning" : "No Tuning");
-    printf("\nBatch: %u, Comp_time:%.3lf, Comm_time:%.3lf\n", batch,
-           avg_comp_time, avg_comm_time);
+    printf("\nBatch: %u, Init time:%.3lf, Comp_time:%.3lf, Comm_time:%.3lf\n",
+           batch, avg_init_time, avg_comp_time, avg_comm_time);
   }
 
   if (unified_mem) {
