@@ -765,7 +765,8 @@ int main(int argc, char *argv[]) {
 
     printf("%s %s\n", unified_mem ? "Unified Memory" : "Normal Memory",
            um_tuning ? "Tuning" : "No Tuning");
-    printf("\nBatch: %u, Init time:%.3lf, Comp_time:%.3lf, Comm_time:%.3lf\n",
+    printf("\nBatch: %u, Init_time:%.3lf[ms], Comp_time:%.3lf[ms], "
+           "Comm_time:%.3lf[ms]\n",
            batch, avg_init_time, avg_comp_time, avg_comm_time);
   }
 
