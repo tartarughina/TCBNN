@@ -1407,7 +1407,7 @@ public:
   }
   size_t output_bytes() { return output_size() * sizeof(uin32); }
   size_t output_bit_size() {
-    return static_size<size_t>(STEP128(output_channels)) * output_height *
+    return static_cast<size_t>(STEP128(output_channels)) * output_height *
            output_width * PAD8(batch);
   }
   size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
