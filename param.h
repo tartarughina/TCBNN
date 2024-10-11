@@ -126,7 +126,8 @@ public:
   size_t output_bytes() { return output_size() * sizeof(float); }
   // binarize on row
   size_t output_bit_size() {
-    return static_cast<size_t>(PAD8(output_height)) * STEP128(output_width);
+    return PAD8(static_cast<size_t>(output_height)) *
+           STEP128(static_cast<size_t>(output_width));
   }
   size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
 
@@ -295,7 +296,8 @@ public:
   }
   size_t input_bytes() { return input_size() * sizeof(uin128); }
   size_t input_bit_size() {
-    return static_cast<size_t>(PAD8(input_height)) * STEP128(input_width);
+    return PAD8(static_cast<size_t>(input_height)) *
+           STEP128(static_cast<size_t>(input_width));
   }
   size_t input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
   // colum major
@@ -304,7 +306,8 @@ public:
   }
   size_t weight_bytes() { return weight_size() * sizeof(float); }
   size_t weight_bit_size() {
-    return static_cast<size_t>(STEP128(weight_height)) * PAD128(weight_width);
+    return STEP128(static_cast<size_t>(weight_height)) *
+           PAD128(static_cast<size_t>(weight_width));
   }
   size_t weight_bit_bytes() { return weight_bit_size() * sizeof(uin128); }
   // row-major
@@ -313,7 +316,8 @@ public:
   }
   size_t output_bytes() { return output_size() * sizeof(float); }
   size_t output_bit_size() {
-    return static_cast<size_t>(PAD8(output_height)) * STEP128(output_width);
+    return PAD8(static_cast<size_t>(output_height)) *
+           STEP128(static_cast<size_t>(output_width));
   }
   size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
 
@@ -583,7 +587,8 @@ public:
   }
   size_t input_bytes() { return input_size() * sizeof(uin128); }
   size_t input_bit_size() {
-    return static_cast<size_t>(PAD8(input_height)) * STEP128(input_width);
+    return PAD8(static_cast<size_t>(input_height)) *
+           STEP128(static_cast<size_t>(input_width));
   }
   size_t input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
   // colum major
@@ -592,7 +597,8 @@ public:
   }
   size_t weight_bytes() { return weight_size() * sizeof(float); }
   size_t weight_bit_size() {
-    return static_cast<size_t>(STEP128(weight_height)) * PAD8(weight_width);
+    return STEP128(static_cast<size_t>(weight_height)) *
+           PAD8(static_cast<size_t>(weight_width));
   }
   size_t weight_bit_bytes() { return weight_bit_size() * sizeof(uin128); }
   // row major
@@ -1069,7 +1075,7 @@ public:
   }
   size_t filter_bytes() { return filter_size() * sizeof(float); }
   size_t filter_bit_size() {
-    return static_cast<size_t>(PAD128(output_channels)) *
+    return PAD128(static_cast<size_t>(output_channels)) *
            STEP128(input_channels) * filter_height * filter_width;
   }
   size_t filter_bit_bytes() { return filter_bit_size() * sizeof(uin128); }
@@ -1079,15 +1085,15 @@ public:
   }
   size_t output_bytes() { return output_size() * sizeof(uin32); }
   size_t output_bit_size() {
-    return static_cast<size_t>(STEP128(output_channels)) * output_height *
-           output_width * PAD8(batch);
+    return STEP128(static_cast<size_t>(output_channels)) * output_height *
+           output_width * PAD8(static_cast<size_t>(batch));
   }
   size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
   size_t bn_size() { return static_cast<size_t>(output_channels); }
   size_t bn_bytes() { return bn_size() * sizeof(float); }
   size_t residual_size() {
-    return static_cast<size_t>(PAD128(output_channels)) * PAD8(batch) *
-           output_height * output_width;
+    return PAD128(static_cast<size_t>(output_channels)) *
+           PAD8(static_cast<size_t>(batch)) * output_height * output_width;
   }
   size_t residual_bytes() { return residual_size() * sizeof(int); }
 
@@ -1195,11 +1201,6 @@ public:
     // Allocate residual for saving
     if (save_residual) {
       if (unified_mem) {
-        size_t free_mem, total_mem;
-        cudaMemGetInfo(&free_mem, &total_mem);
-        double used_mem = (total_mem - free_mem) / (1024 * 1024);
-        printf("Allocated memory with %d batch %f\n", batch, used_mem);
-        printf("Residual bytes %d\n", residual_bytes());
         SAFE_ALOC_UM(output_residual_gpu, residual_bytes());
       } else {
         SAFE_ALOC_GPU(output_residual_gpu, residual_bytes());
@@ -1387,8 +1388,8 @@ public:
   }
   size_t input_bytes() { return input_size() * sizeof(uin32); }
   size_t input_bit_size() {
-    return static_cast<size_t>(STEP128(input_channels)) * input_height *
-           input_width * PAD8(batch);
+    return STEP128(static_cast<size_t>(input_channels)) * input_height *
+           input_width * PAD8(static_cast<size_t>(batch));
   }
   size_t input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
   size_t filter_size() {
@@ -1397,8 +1398,9 @@ public:
   }
   size_t filter_bytes() { return filter_size() * sizeof(float); }
   size_t filter_bit_size() {
-    return static_cast<size_t>(PAD32(output_channels)) *
-           STEP128(input_channels) * filter_height * filter_width;
+    return PAD32(static_cast<size_t>(output_channels)) *
+           STEP128(static_cast<size_t>(input_channels)) * filter_height *
+           filter_width;
   }
   size_t filter_bit_bytes() { return filter_bit_size() * sizeof(uin128); }
   size_t output_size() {
@@ -1407,15 +1409,15 @@ public:
   }
   size_t output_bytes() { return output_size() * sizeof(uin32); }
   size_t output_bit_size() {
-    return static_cast<size_t>(STEP128(output_channels)) * output_height *
-           output_width * PAD8(batch);
+    return STEP128(static_cast<size_t>(output_channels)) * output_height *
+           output_width * PAD8(static_cast<size_t>(batch));
   }
   size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
   size_t bn_size() { return static_cast<size_t>(output_channels); }
   size_t bn_bytes() { return bn_size() * sizeof(float); }
   size_t residual_size() {
-    return static_cast<size_t>(PAD128(output_channels)) * PAD8(batch) *
-           output_height * output_width;
+    return PAD128(static_cast<size_t>(output_channels)) *
+           PAD8(static_size<size_t>(batch)) * output_height * output_width;
   }
   size_t residual_bytes() { return residual_size() * sizeof(int); }
 
