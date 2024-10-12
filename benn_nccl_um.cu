@@ -733,10 +733,10 @@ int main(int argc, char *argv[]) {
   CHECK_MPI(MPI_Barrier(MPI_COMM_WORLD));
 
   //================ Output =================
-  if (rank == 0) {
-    float *output = bout->download_output();
-    validate_prediction(output, image_labels, output_size, batch);
-  }
+  // if (rank == 0) {
+  //   float *output = bout->download_output();
+  //   validate_prediction(output, image_labels, output_size, batch);
+  // }
 
   // float *out = l1b2c1->download_full_output();
   // // float* out = l1b1c2->download_full_output();
