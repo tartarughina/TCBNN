@@ -420,23 +420,20 @@ void run(unsigned batch, float *pcomp_time, float *pcomm_time) {
     // CHECK_NCCL(ncclCommDestroy(comm[i_gpu]));
 
     //================ Output =================
-    // if (i_gpu == 0)
-    //{
-    // float* output = bout->download_output();
-    // validate_prediction(output, image_labels, output_size, batch);
-    //}
+    if (i_gpu == 0) {
+      float *output = bout->download_output();
+      validate_prediction(output, image_labels, output_size, batch);
+    }
 
-    /*
-        float* out = l1b2c1->download_full_output();
-        //float* out = l1b1c2->download_full_output();
-        //for (int i=0; i<512; i++)
-        for (int i=4096; i<4096+512; i++)
-        {
-            printf("%.f ", out[i]);
-            if ((i+1)%32==0) printf("\n");
-        }
-        printf("\n===%f===\n", bout->bn_scale[0]);
-    */
+    // float *out = l1b2c1->download_full_output();
+    // // float* out = l1b1c2->download_full_output();
+    // // for (int i=0; i<512; i++)
+    // for (int i = 4096; i < 4096 + 512; i++) {
+    //   printf("%.f ", out[i]);
+    //   if ((i + 1) % 32 == 0)
+    //     printf("\n");
+    // }
+    // printf("\n===%f===\n", bout->bn_scale[0]);
 
     delete bconv1;
     delete l1b1c1;
