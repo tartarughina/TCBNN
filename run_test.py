@@ -27,9 +27,9 @@ def main():
                 command = f"mpirun -n {gpus} ./benn_nccl -b {batch}"
 
                 if mode == 1:
-                    command += " -m"
+                    command += " -u"
                 elif mode == 2:
-                    command += " -m -t"
+                    command += " -u -t"
 
                 result_file = os.path.join(output_dir, f"{get_mode(mode)}_gpus_{gpus}_batch_{batch}_iter_{i}.txt")
 
