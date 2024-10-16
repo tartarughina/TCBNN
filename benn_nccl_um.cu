@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
   bool um_tuning = false;
   unsigned batch = 64;
   int oversub = 0;
-  int *oversub_ptr = nullptr;
+  void *oversub_ptr = nullptr;
   // bool verbose = false;
 
   MPI_Comm local_comm;
@@ -253,6 +253,10 @@ int main(int argc, char *argv[]) {
     //   break;
     case 'o':
       oversub = atoi(optarg);
+      if (oversub != 1 && oversub != 2) {
+        fprintf(stderr, "Invalid value for oversub: %d\n", oversub);
+        exit(EXIT_FAILURE);
+      }
       break;
     case 'h':
       usage(argv[0]);
