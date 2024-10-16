@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <cooperative_groups.h>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
@@ -24,6 +25,11 @@
 
 using namespace cooperative_groups;
 using namespace std;
+
+#define OVERSUB_FACTOR_1 1.5
+#define OVERSUB_FACTOR_2 2.0
+
+#define TO_BYTE(X) static_cast<size_t>(X) * 1024 * 1024
 
 #ifdef NEWFMT
 
@@ -191,7 +197,10 @@ static void usage(const char *pname) {
           "\t-t|--um_tuning\n"
           "\t\tEnable unified memory tuning. (default: false) \n"
           "\t-b|--batch\n"
-          "\t\tSet batch size. (default: 64) \n",
+          "\t\tSet batch size. (default: 64) \n"
+          "\t-o|--oversub\n"
+          "\t\tEnable oversubscribing GPUs. (default: 0, options: 1->1.5x "
+          "2->2x) \n",
           // "\t-v|--verbose\n"
           // "\t\tEnable verbose logs. (default: false)\n",
           bname);
@@ -203,6 +212,8 @@ int main(int argc, char *argv[]) {
   bool unified_mem = false;
   bool um_tuning = false;
   unsigned batch = 64;
+  int oversub = 0;
+  int *oversub_ptr = nullptr;
   // bool verbose = false;
 
   MPI_Comm local_comm;
@@ -214,13 +225,14 @@ int main(int argc, char *argv[]) {
   static struct option long_options[] = {{"unified_mem", no_argument, 0, 'u'},
                                          {"um_tuning", no_argument, 0, 't'},
                                          // {"verbose", no_argument, 0, 'v'},
+                                         {"oversub", required_argument, 0, 'o'},
                                          {"batch", required_argument, 0, 'b'},
                                          {"help", no_argument, 0, 'h'},
                                          {0, 0, 0, 0}};
 
   while (1) {
     int option_index = 0;
-    int ch = getopt_long(argc, argv, "utb:h", long_options, &option_index);
+    int ch = getopt_long(argc, argv, "utb:o:h", long_options, &option_index);
     if (ch == -1)
       break;
 
@@ -239,6 +251,9 @@ int main(int argc, char *argv[]) {
     // case 'v':
     //   verbose = true;
     //   break;
+    case 'o':
+      oversub = atoi(optarg);
+      break;
     case 'h':
       usage(argv[0]);
       break;
@@ -256,6 +271,44 @@ int main(int argc, char *argv[]) {
   CHECK_MPI(MPI_Comm_rank(local_comm, &i_gpu));
 
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
+
+  if (oversub) {
+    if (!unified_mem) {
+      fprintf(stderr, "Oversubscribing GPUs requires unified memory\n");
+      exit(-1);
+    }
+
+    size_t buffer_size, free_mem, total_mem;
+    double factor;
+
+    CUDA_SAFE_CALL(cudaMemGetInfo(&free_mem, &total_mem));
+
+    if (oversub == 1) {
+      factor = OVERSUB_FACTOR_1;
+    } else if (oversub == 2) {
+      factor = OVERSUB_FACTOR_2;
+    } else {
+      fprintf(stderr, "Invalid oversub option: %d\n", oversub);
+      exit(EXIT_FAILURE);
+    }
+
+    switch (batch) {
+    case 1024:
+      buffer_size = free_mem - (TO_BYTE(8300)) / factor;
+      break;
+    case 2048:
+      buffer_size = free_mem - (TO_BYTE(15200)) / factor;
+      break;
+    case 4096:
+      buffer_size = free_mem - (TO_BYTE(29000)) / factor;
+      break;
+    default:
+      fprintf(stderr, "Unsupported batch size for oversub\n");
+      exit(-1);
+    }
+
+    SAFE_ALOC_GPU(oversub_ptr, buffer_size);
+  }
 
   vector<float> init_times;
   vector<float> comp_times;
@@ -812,6 +865,10 @@ int main(int argc, char *argv[]) {
 
     SAFE_FREE_UM(image_labels);
     SAFE_FREE_UM(images);
+
+    if (oversub) {
+      SAFE_FREE_GPU(oversub_ptr);
+    }
   } else {
     delete bconv1;
     delete l1b1c1;
