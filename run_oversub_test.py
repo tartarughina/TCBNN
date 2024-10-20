@@ -12,7 +12,7 @@ def get_oversub(oversub: int) -> str:
 def main():
     batch_sizes = [1024, 2048, 4096]
     iterations = 5
-    output_dir = "log"
+    output_dir = "benn_over_log"
     gpus = 4
 
     os.makedirs(output_dir, exist_ok=True)
