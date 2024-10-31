@@ -111,16 +111,25 @@ public:
     strncpy(name, _name, 8);
   }
   // input utility
-  int input_size() { return input_height * input_width; }
-  int input_bytes() { return input_size() * sizeof(float); }
-  int input_bit_size() { return input_height * input_width; }
-  int input_bit_bytes() { return input_bit_size() * sizeof(float); }
+  size_t input_size() {
+    return static_cast<size_t>(input_height) * input_width;
+  }
+  size_t input_bytes() { return input_size() * sizeof(float); }
+  size_t input_bit_size() {
+    return static_cast<size_t>(input_height) * input_width;
+  }
+  size_t input_bit_bytes() { return input_bit_size() * sizeof(float); }
   // output utility
-  int output_size() { return output_height * output_width; }
-  int output_bytes() { return output_size() * sizeof(float); }
+  size_t output_size() {
+    return static_cast<size_t>(output_height) * output_width;
+  }
+  size_t output_bytes() { return output_size() * sizeof(float); }
   // binarize on row
-  int output_bit_size() { return PAD8(output_height) * STEP128(output_width); }
-  int output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
+  size_t output_bit_size() {
+    return PAD8(static_cast<size_t>(output_height)) *
+           STEP128(static_cast<size_t>(output_width));
+  }
+  size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
 
   In128LayerParam *initialize(float *input) {
     CHECK_NULL_POINTER(input);
@@ -282,26 +291,39 @@ public:
     strncpy(this->name, name, 8);
   }
   // row major
-  int input_size() { return input_height * input_width; }
-  int input_bytes() { return input_size() * sizeof(uin128); }
-  int input_bit_size() { return PAD8(input_height) * STEP128(input_width); }
-  int input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
-  // colum major
-  int weight_size() { return weight_height * weight_width; }
-  int weight_bytes() { return weight_size() * sizeof(float); }
-  int weight_bit_size() {
-    return STEP128(weight_height) * PAD128(weight_width);
+  size_t input_size() {
+    return static_cast<size_t>(input_height) * input_width;
   }
-  int weight_bit_bytes() { return weight_bit_size() * sizeof(uin128); }
+  size_t input_bytes() { return input_size() * sizeof(uin128); }
+  size_t input_bit_size() {
+    return PAD8(static_cast<size_t>(input_height)) *
+           STEP128(static_cast<size_t>(input_width));
+  }
+  size_t input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
+  // colum major
+  size_t weight_size() {
+    return static_cast<size_t>(weight_height) * weight_width;
+  }
+  size_t weight_bytes() { return weight_size() * sizeof(float); }
+  size_t weight_bit_size() {
+    return STEP128(static_cast<size_t>(weight_height)) *
+           PAD128(static_cast<size_t>(weight_width));
+  }
+  size_t weight_bit_bytes() { return weight_bit_size() * sizeof(uin128); }
   // row-major
-  int output_size() { return output_height * output_width; }
-  int output_bytes() { return output_size() * sizeof(float); }
-  int output_bit_size() { return PAD8(output_height) * STEP128(output_width); }
-  int output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
+  size_t output_size() {
+    return static_cast<size_t>(output_height) * output_width;
+  }
+  size_t output_bytes() { return output_size() * sizeof(float); }
+  size_t output_bit_size() {
+    return PAD8(static_cast<size_t>(output_height)) *
+           STEP128(static_cast<size_t>(output_width));
+  }
+  size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
 
   // batch-norm
-  int bn_size() { return bn_width; }
-  int bn_bytes() { return bn_size() * sizeof(float); }
+  size_t bn_size() { return static_cast<size_t>(bn_width); }
+  size_t bn_bytes() { return bn_size() * sizeof(float); }
   Fc128LayerParam *ready() {
     CHECK_NULL_POINTER(input_gpu);
     CHECK_NULL_POINTER(output_gpu);
@@ -560,23 +582,39 @@ public:
     strncpy(this->name, name, 8);
   }
   // row major
-  int input_size() { return input_height * input_width; }
-  int input_bytes() { return input_size() * sizeof(uin128); }
-  int input_bit_size() { return PAD8(input_height) * STEP128(input_width); }
-  int input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
+  size_t input_size() {
+    return static_cast<size_t>(input_height) * input_width;
+  }
+  size_t input_bytes() { return input_size() * sizeof(uin128); }
+  size_t input_bit_size() {
+    return PAD8(static_cast<size_t>(input_height)) *
+           STEP128(static_cast<size_t>(input_width));
+  }
+  size_t input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
   // colum major
-  int weight_size() { return weight_height * weight_width; }
-  int weight_bytes() { return weight_size() * sizeof(float); }
-  int weight_bit_size() { return STEP128(weight_height) * PAD8(weight_width); }
-  int weight_bit_bytes() { return weight_bit_size() * sizeof(uin128); }
+  size_t weight_size() {
+    return static_cast<size_t>(weight_height) * weight_width;
+  }
+  size_t weight_bytes() { return weight_size() * sizeof(float); }
+  size_t weight_bit_size() {
+    return STEP128(static_cast<size_t>(weight_height)) *
+           PAD8(static_cast<size_t>(weight_width));
+  }
+  size_t weight_bit_bytes() { return weight_bit_size() * sizeof(uin128); }
   // row major
-  int output_size() { return output_height * output_width; }
-  int output_bytes() { return output_size() * sizeof(float); }
-  int output_bit_size() { return output_height * output_width; }
-  int output_bit_bytes() { return output_bit_size() * sizeof(float); }
+  size_t output_size() {
+    return static_cast<size_t>(output_height) * output_width;
+  }
+  size_t output_bytes() { return output_size() * sizeof(float); }
+  size_t output_bit_size() {
+    return static_cast<size_t>(output_height) * output_width;
+  }
+  size_t output_bit_bytes() { return output_bit_size() * sizeof(float); }
 
-  int bn_size() { return output_width; }
-  int bn_bytes() { return output_width * sizeof(float); }
+  size_t bn_size() { return static_cast<size_t>(output_width); }
+  size_t bn_bytes() {
+    return static_cast<size_t>(output_width) * sizeof(float);
+  }
 
   Out128LayerParam *ready() {
     CHECK_NULL_POINTER(input_gpu);
@@ -1021,38 +1059,43 @@ public:
 
     return this;
   }
-  int input_size() {
-    return input_channels * input_height * input_width * batch;
+  size_t input_size() {
+    return static_cast<size_t>(input_channels) * input_height * input_width *
+           batch;
   }
-  int input_bytes() { return input_size() * sizeof(float); }
-  int input_bit_size() {
-    return input_channels * input_height * input_width * batch;
+  size_t input_bytes() { return input_size() * sizeof(float); }
+  size_t input_bit_size() {
+    return static_cast<size_t>(input_channels) * input_height * input_width *
+           batch;
   }
-  int input_bit_bytes() { return input_bit_size() * sizeof(float); }
-  int filter_size() {
-    return output_channels * input_channels * filter_height * filter_width;
+  size_t input_bit_bytes() { return input_bit_size() * sizeof(float); }
+  size_t filter_size() {
+    return static_cast<size_t>(output_channels) * input_channels *
+           filter_height * filter_width;
   }
-  int filter_bytes() { return filter_size() * sizeof(float); }
-  int filter_bit_size() {
-    return PAD128(output_channels) * STEP128(input_channels) * filter_height *
-           filter_width;
+  size_t filter_bytes() { return filter_size() * sizeof(float); }
+  size_t filter_bit_size() {
+    return PAD128(static_cast<size_t>(output_channels)) *
+           STEP128(input_channels) * filter_height * filter_width;
   }
-  int filter_bit_bytes() { return filter_bit_size() * sizeof(uin128); }
-  int output_size() {
-    return output_channels * output_height * output_width * batch;
+  size_t filter_bit_bytes() { return filter_bit_size() * sizeof(uin128); }
+  size_t output_size() {
+    return static_cast<size_t>(output_channels) * output_height * output_width *
+           batch;
   }
-  int output_bytes() { return output_size() * sizeof(uin32); }
-  int output_bit_size() {
-    return STEP128(output_channels) * output_height * output_width *
-           PAD8(batch);
+  size_t output_bytes() { return output_size() * sizeof(uin32); }
+  size_t output_bit_size() {
+    return STEP128(static_cast<size_t>(output_channels)) * output_height *
+           output_width * PAD8(static_cast<size_t>(batch));
   }
-  int output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
-  int bn_size() { return output_channels; }
-  int bn_bytes() { return bn_size() * sizeof(float); }
-  int residual_size() {
-    return PAD128(output_channels) * PAD8(batch) * output_height * output_width;
+  size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
+  size_t bn_size() { return static_cast<size_t>(output_channels); }
+  size_t bn_bytes() { return bn_size() * sizeof(float); }
+  size_t residual_size() {
+    return PAD128(static_cast<size_t>(output_channels)) *
+           PAD8(static_cast<size_t>(batch)) * output_height * output_width;
   }
-  int residual_bytes() { return residual_size() * sizeof(int); }
+  size_t residual_bytes() { return residual_size() * sizeof(int); }
 
   InConv128LayerParam *initialize(float *input, FILE *config_file) {
     // Process input
@@ -1158,11 +1201,6 @@ public:
     // Allocate residual for saving
     if (save_residual) {
       if (unified_mem) {
-        size_t free_mem, total_mem;
-        cudaMemGetInfo(&free_mem, &total_mem);
-        double used_mem = (total_mem - free_mem) / (1024 * 1024);
-        printf("Allocated memory with %d batch %f\n", batch, used_mem);
-        printf("Residual bytes %d\n", residual_bytes());
         SAFE_ALOC_UM(output_residual_gpu, residual_bytes());
       } else {
         SAFE_ALOC_GPU(output_residual_gpu, residual_bytes());
@@ -1344,38 +1382,44 @@ public:
                             : ((input_width - filter_width) / stride_width + 1);
     output_width = (buf_width + pool_width - 1) / pool_width; // pooling width
   }
-  int input_size() {
-    return input_channels * input_height * input_width * batch;
+  size_t input_size() {
+    return static_cast<size_t>(input_channels) * input_height * input_width *
+           batch;
   }
-  int input_bytes() { return input_size() * sizeof(uin32); }
-  int input_bit_size() {
-    return STEP128(input_channels) * input_height * input_width * PAD8(batch);
+  size_t input_bytes() { return input_size() * sizeof(uin32); }
+  size_t input_bit_size() {
+    return STEP128(static_cast<size_t>(input_channels)) * input_height *
+           input_width * PAD8(static_cast<size_t>(batch));
   }
-  int input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
-  int filter_size() {
-    return output_channels * input_channels * filter_height * filter_width;
+  size_t input_bit_bytes() { return input_bit_size() * sizeof(uin128); }
+  size_t filter_size() {
+    return static_cast<size_t>(output_channels) * input_channels *
+           filter_height * filter_width;
   }
-  int filter_bytes() { return filter_size() * sizeof(float); }
-  int filter_bit_size() {
-    return PAD32(output_channels) * STEP128(input_channels) * filter_height *
+  size_t filter_bytes() { return filter_size() * sizeof(float); }
+  size_t filter_bit_size() {
+    return PAD32(static_cast<size_t>(output_channels)) *
+           STEP128(static_cast<size_t>(input_channels)) * filter_height *
            filter_width;
   }
-  int filter_bit_bytes() { return filter_bit_size() * sizeof(uin128); }
-  int output_size() {
-    return output_channels * output_height * output_width * batch;
+  size_t filter_bit_bytes() { return filter_bit_size() * sizeof(uin128); }
+  size_t output_size() {
+    return static_cast<size_t>(output_channels) * output_height * output_width *
+           batch;
   }
-  int output_bytes() { return output_size() * sizeof(uin32); }
-  int output_bit_size() {
-    return STEP128(output_channels) * output_height * output_width *
-           PAD8(batch);
+  size_t output_bytes() { return output_size() * sizeof(uin32); }
+  size_t output_bit_size() {
+    return STEP128(static_cast<size_t>(output_channels)) * output_height *
+           output_width * PAD8(static_cast<size_t>(batch));
   }
-  int output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
-  int bn_size() { return output_channels; }
-  int bn_bytes() { return bn_size() * sizeof(float); }
-  int residual_size() {
-    return PAD128(output_channels) * PAD8(batch) * output_height * output_width;
+  size_t output_bit_bytes() { return output_bit_size() * sizeof(uin128); }
+  size_t bn_size() { return static_cast<size_t>(output_channels); }
+  size_t bn_bytes() { return bn_size() * sizeof(float); }
+  size_t residual_size() {
+    return PAD128(static_cast<size_t>(output_channels)) *
+           PAD8(static_cast<size_t>(batch)) * output_height * output_width;
   }
-  int residual_bytes() { return residual_size() * sizeof(int); }
+  size_t residual_bytes() { return residual_size() * sizeof(int); }
 
   Conv128LayerParam *ready() {
     CHECK_NULL_POINTER(input_gpu);

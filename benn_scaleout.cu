@@ -385,8 +385,18 @@ int main(int argc, char *argv[]) {
 
   cudaEventRecord(comm_start);
 
-  MPI_Reduce(bout->get_output_gpu(), bout->get_output_gpu(),
-             bout->output_size(), MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
+  if (dev == 0) {
+    // Root process reduces in place
+    MPI_Reduce(MPI_IN_PLACE, bout->get_output_gpu(), bout->output_size(),
+               MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
+  } else {
+    // Non-root processes send their data, no need for rbuf (nullptr for
+    // non-root)
+    MPI_Reduce(bout->get_output_gpu(), nullptr, bout->output_size(), MPI_FLOAT,
+               MPI_MAX, 0, MPI_COMM_WORLD);
+  }
+  // MPI_Reduce(bout->get_output_gpu(), bout->get_output_gpu(),
+  //            bout->output_size(), MPI_FLOAT, MPI_MAX, 0, MPI_COMM_WORLD);
   MPI_Barrier(MPI_COMM_WORLD);
 
   cudaEventRecord(comm_stop);

@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <cooperative_groups.h>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <getopt.h>
 #include <iostream>
@@ -24,6 +25,11 @@
 
 using namespace cooperative_groups;
 using namespace std;
+
+#define OVERSUB_FACTOR_1 1.5
+#define OVERSUB_FACTOR_2 2.0
+
+#define TO_BYTE(X) static_cast<size_t>(X) * 1024 * 1024
 
 #ifdef NEWFMT
 
@@ -191,7 +197,10 @@ static void usage(const char *pname) {
           "\t-t|--um_tuning\n"
           "\t\tEnable unified memory tuning. (default: false) \n"
           "\t-b|--batch\n"
-          "\t\tSet batch size. (default: 64) \n",
+          "\t\tSet batch size. (default: 64) \n"
+          "\t-o|--oversub\n"
+          "\t\tEnable oversubscribing GPUs. (default: 0, options: 1->1.5x "
+          "2->2x) \n",
           // "\t-v|--verbose\n"
           // "\t\tEnable verbose logs. (default: false)\n",
           bname);
@@ -203,6 +212,8 @@ int main(int argc, char *argv[]) {
   bool unified_mem = false;
   bool um_tuning = false;
   unsigned batch = 64;
+  int oversub = 0;
+  void *oversub_ptr = nullptr;
   // bool verbose = false;
 
   MPI_Comm local_comm;
@@ -214,13 +225,14 @@ int main(int argc, char *argv[]) {
   static struct option long_options[] = {{"unified_mem", no_argument, 0, 'u'},
                                          {"um_tuning", no_argument, 0, 't'},
                                          // {"verbose", no_argument, 0, 'v'},
+                                         {"oversub", required_argument, 0, 'o'},
                                          {"batch", required_argument, 0, 'b'},
                                          {"help", no_argument, 0, 'h'},
                                          {0, 0, 0, 0}};
 
   while (1) {
     int option_index = 0;
-    int ch = getopt_long(argc, argv, "utb:h", long_options, &option_index);
+    int ch = getopt_long(argc, argv, "utb:o:h", long_options, &option_index);
     if (ch == -1)
       break;
 
@@ -239,6 +251,13 @@ int main(int argc, char *argv[]) {
     // case 'v':
     //   verbose = true;
     //   break;
+    case 'o':
+      oversub = atoi(optarg);
+      if (oversub != 1 && oversub != 2) {
+        fprintf(stderr, "Invalid value for oversub: %d\n", oversub);
+        exit(EXIT_FAILURE);
+      }
+      break;
     case 'h':
       usage(argv[0]);
       break;
@@ -257,6 +276,45 @@ int main(int argc, char *argv[]) {
 
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
 
+  if (oversub) {
+    if (!unified_mem) {
+      fprintf(stderr, "Oversubscribing GPUs requires unified memory\n");
+      exit(-1);
+    }
+
+    size_t buffer_size, free_mem, total_mem;
+    double factor;
+
+    CUDA_SAFE_CALL(cudaMemGetInfo(&free_mem, &total_mem));
+
+    if (oversub == 1) {
+      factor = OVERSUB_FACTOR_1;
+    } else if (oversub == 2) {
+      factor = OVERSUB_FACTOR_2;
+    } else {
+      fprintf(stderr, "Invalid oversub option: %d\n", oversub);
+      exit(EXIT_FAILURE);
+    }
+
+    switch (batch) {
+    case 1024:
+      buffer_size = free_mem - (TO_BYTE(8300)) / factor;
+      break;
+    case 2048:
+      buffer_size = free_mem - (TO_BYTE(15200)) / factor;
+      break;
+    case 4096:
+      buffer_size = free_mem - (TO_BYTE(29000)) / factor;
+      break;
+    default:
+      fprintf(stderr, "Unsupported batch size for oversub\n");
+      exit(-1);
+    }
+
+    SAFE_ALOC_GPU(oversub_ptr, buffer_size);
+  }
+
+  vector<float> init_times;
   vector<float> comp_times;
   vector<float> comm_times;
 
@@ -272,7 +330,11 @@ int main(int argc, char *argv[]) {
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
 
   MPI_Barrier(MPI_COMM_WORLD);
-  cudaEvent_t comp_start, comp_stop, comm_start, comm_stop;
+  cudaEvent_t init_start, init_stop, comp_start, comp_stop, comm_start,
+      comm_stop;
+
+  CUDA_SAFE_CALL(cudaEventCreate(&init_start));
+  CUDA_SAFE_CALL(cudaEventCreate(&init_stop));
   CUDA_SAFE_CALL(cudaEventCreate(&comp_start));
   CUDA_SAFE_CALL(cudaEventCreate(&comp_stop));
   CUDA_SAFE_CALL(cudaEventCreate(&comm_start));
@@ -287,6 +349,8 @@ int main(int argc, char *argv[]) {
   //=============== Get Input and Label =================
   float *images = nullptr;
   unsigned *image_labels = nullptr;
+
+  CUDA_SAFE_CALL(cudaEventRecord(init_start));
 
   if (unified_mem) {
     SAFE_ALOC_UM(images, batch * image_height * image_width * image_channel *
@@ -644,13 +708,15 @@ int main(int argc, char *argv[]) {
   Out128LayerParam *bout_gpu =
       bout->initialize(config_file, bfc1->get_output_gpu());
 
+  CUDA_SAFE_CALL(cudaEventRecord(init_stop));
+
   //============= Memory Allocation ===============
 
-  size_t free_mem, total_mem;
-  cudaMemGetInfo(&free_mem, &total_mem);
-  double used_mem = (total_mem - free_mem) / (1024 * 1024);
-  printf("Allocated memory with %d batch %f\n", batch, used_mem);
-  exit(1);
+  // size_t free_mem, total_mem;
+  // cudaMemGetInfo(&free_mem, &total_mem);
+  // double used_mem = (total_mem - free_mem) / (1024 * 1024);
+  // printf("Allocated memory with %d batch %f\n", batch, used_mem);
+  // exit(1);
 
   //================ Setup Kernel =================
   int numThreads = 1024;
@@ -702,17 +768,20 @@ int main(int argc, char *argv[]) {
 
   // STOP_TIMER;
   CUDA_SAFE_CALL(cudaDeviceSynchronize());
-  float comp_time, comm_time;
+  float init_time, comp_time, comm_time;
 
+  cudaEventElapsedTime(&init_time, init_start, init_stop);
   cudaEventElapsedTime(&comp_time, comp_start, comp_stop);
   cudaEventElapsedTime(&comm_time, comm_start, comm_stop);
 
   if (rank == 0) {
+    init_times.resize(n_gpu, 0);
     comm_times.resize(n_gpu, 0);
     comp_times.resize(n_gpu, 0);
   }
 
-  // Oh nevermind, this once is not meant to be used by NCCL
+  CHECK_MPI(MPI_Gather(&init_time, 1, MPI_FLOAT, init_times.data(), 1,
+                       MPI_FLOAT, 0, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Gather(&comp_time, 1, MPI_FLOAT, comp_times.data(), 1,
                        MPI_FLOAT, 0, MPI_COMM_WORLD));
   CHECK_MPI(MPI_Gather(&comm_time, 1, MPI_FLOAT, comm_times.data(), 1,
@@ -737,21 +806,25 @@ int main(int argc, char *argv[]) {
   // printf("\n===%f===\n", bout->bn_scale[0]);
 
   if (rank == 0) {
+    double avg_init_time = 0.0;
     double avg_comp_time = 0.0;
     double avg_comm_time = 0.0;
 
     for (int k = 0; k < n_gpu; k++) {
+      avg_init_time += init_times[k];
       avg_comp_time += comp_times[k];
       avg_comm_time += comm_times[k];
     }
 
+    avg_init_time /= static_cast<double>(n_gpu);
     avg_comp_time /= static_cast<double>(n_gpu);
     avg_comm_time /= static_cast<double>(n_gpu);
 
     printf("%s %s\n", unified_mem ? "Unified Memory" : "Normal Memory",
            um_tuning ? "Tuning" : "No Tuning");
-    printf("\nBatch: %u, Comp_time:%.3lf, Comm_time:%.3lf\n", batch,
-           avg_comp_time, avg_comm_time);
+    printf("\nBatch: %u, Init_time:%.3lf[ms], Comp_time:%.3lf[ms], "
+           "Comm_time:%.3lf[ms]\n",
+           batch, avg_init_time, avg_comp_time, avg_comm_time);
   }
 
   if (unified_mem) {
@@ -796,6 +869,10 @@ int main(int argc, char *argv[]) {
 
     SAFE_FREE_UM(image_labels);
     SAFE_FREE_UM(images);
+
+    if (oversub) {
+      SAFE_FREE_GPU(oversub_ptr);
+    }
   } else {
     delete bconv1;
     delete l1b1c1;
