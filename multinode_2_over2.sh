@@ -2,7 +2,7 @@
 
 #PBS -A SEEr-Polaris
 #PBS -l walltime=1:00:00
-#PBS -l filesystems=home
+#PBS -l filesystems=home:eagle
 #PBS -N OVER2_2
 #PBS -m bea
 #PBS -M rstrin4@uic.edu
