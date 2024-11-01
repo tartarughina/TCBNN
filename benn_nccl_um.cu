@@ -326,9 +326,9 @@ int main(int argc, char *argv[]) {
   if (rank == 0) {
     ncclGetUniqueId(&id);
   }
-  printf("Init NCCL communicator\n");
+
   CHECK_MPI(MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
-  CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
+  CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, rank));
 
   MPI_Barrier(MPI_COMM_WORLD);
   cudaEvent_t init_start, init_stop, comp_start, comp_stop, comm_start,
