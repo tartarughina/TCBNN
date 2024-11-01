@@ -274,6 +274,7 @@ int main(int argc, char *argv[]) {
                                 MPI_INFO_NULL, &local_comm));
   CHECK_MPI(MPI_Comm_rank(local_comm, &i_gpu));
 
+  printf("Rank %d: Setting device %d\n", rank, i_gpu);
   CUDA_SAFE_CALL(cudaSetDevice(i_gpu));
 
   if (oversub) {
@@ -325,7 +326,7 @@ int main(int argc, char *argv[]) {
   if (rank == 0) {
     ncclGetUniqueId(&id);
   }
-
+  printf("Init NCCL communicator\n");
   CHECK_MPI(MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD));
   CHECK_NCCL(ncclCommInitRank(&comm, n_gpu, id, i_gpu));
 
@@ -376,6 +377,8 @@ int main(int argc, char *argv[]) {
                              image_channel * sizeof(float));
     image_labels = (unsigned *)malloc(batch * sizeof(unsigned));
   }
+  if (rank == 0)
+    printf("Reading ImageNet\n");
 
   read_ImageNet_normalized("./polaris_imagenet_files.txt", images, image_labels,
                            batch);

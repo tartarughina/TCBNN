@@ -37,6 +37,10 @@ NTOTRANKS=$(( NNODES * nranks ))
 
 cd /home/tartarughina/TCBNN
 
+export NCCL_DEBUG=INFO
+export MPICH_DEBUG=1
+export MPICH_VERBOSE=1
+
 # Execute 5 times
 for i in {1..5}; do
     mpiexec --envall --np "${NTOTRANKS}" --ppn "${nranks}" --hostfile "$PBS_NODEFILE" --cpu-bind list:0,8,16,24 ./benn_nccl -b "${batch}" -u > "${log_path}/UM_gpus_${NTOTRANKS}_batch_${batch}_iter_${i}.txt"
