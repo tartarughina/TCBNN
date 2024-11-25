@@ -1,0 +1,5 @@
+Starting ResNet-128 with batch: 2048
+Completed ResNet-128... Collecting results
+Normal Memory No Tuning
+
+Batch: 2048, Init_time:9325.298[ms], Comp_time:154.995[ms], Comm_time:1.587[ms]

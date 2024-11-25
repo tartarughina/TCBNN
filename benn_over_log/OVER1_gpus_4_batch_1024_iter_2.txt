@@ -1,0 +1,5 @@
+Starting ResNet-128 with batch: 1024
+Completed ResNet-128... Collecting results
+Unified Memory No Tuning
+
+Batch: 1024, Init_time:6826.805[ms], Comp_time:1206.259[ms], Comm_time:139.594[ms]

@@ -1,0 +1,14 @@
+Rank 0: Setting device 0
+Reading ImageNet
+Starting ResNet-128 with batch: 2048
+Completed ResNet-128... Collecting results
+Unified Memory Tuning
+
+Batch: 2048, Init_time:13571.881[ms], Comp_time:153.665[ms], Comm_time:8.125[ms]
+Rank 4: Setting device 0
+Rank 3: Setting device 3
+Rank 5: Setting device 1
+Rank 2: Setting device 2
+Rank 7: Setting device 3
+Rank 1: Setting device 1
+Rank 6: Setting device 2
